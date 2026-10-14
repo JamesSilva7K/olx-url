@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>OLX Brasil - Consultador & Validador Supremo 3D</title>
+  
+  <!-- Tipografia Moderna Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Bibliotecas Externas: Three.js para 3D e Chart.js para Métricas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Estilos Personalizados Monochrome -->
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/animations.css">
+</head>
+<body>
+
+  <!-- Canvas 3D de Fundo com Partículas e Grade Ondulada -->
+  <canvas id="three-bg-canvas"></canvas>
+
+  <div class="app-container">
+    
+    <!-- Top Header & Navegação -->
+    <header class="top-header">
+      <div class="brand-section">
+        <div class="brand-badge">
+          <div class="brand-logo-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+              <path d="M2 17l10 5 10-5"></path>
+              <path d="M2 12l10 5 10-5"></path>
+            </svg>
+          </div>
+          <span>OLX PROTOCOL</span>
+        </div>
+        <div class="shield-pill">
+          <span class="pulse-dot"></span>
+          <span>BLINDAGEM ATIVA • 100% REAL</span>
+        </div>
+      </div>
+
+      <!-- Abas de Navegação -->
+      <nav class="nav-tabs">
+        <button class="nav-tab-btn active" data-tab="consultador">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          Consultador OLX
+        </button>
+        <button class="nav-tab-btn" data-tab="validador">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          Validador de Anúncio
+        </button>
+        <button class="nav-tab-btn" data-tab="perfil">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+          Meu Perfil
+        </button>
+        <button class="nav-tab-btn" data-tab="admin">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+          Painel Supremo
+        </button>
+      </nav>
+
+      <!-- Ações do Cabeçalho: Perfil e Admin Trigger -->
+      <div class="header-actions">
+        <div class="lead-profile-btn" id="header-profile-btn" title="Editar Perfil ou Trocar Avatar">
+          <div class="avatar-frame">
+            <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23111317'/><circle cx='50' cy='38' r='18' fill='%23ffffff'/><path d='M25 82 C25 62, 75 62, 75 82' fill='%23ffffff'/></svg>" id="header-lead-avatar" alt="Avatar">
+          </div>
+          <span class="lead-vulgo-label" id="header-lead-vulgo">Convidado</span>
+        </div>
+        <button class="admin-trigger-btn" id="admin-login-trigger" title="Acesso Direto ao Painel Supremo">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+          SUPREMO
+        </button>
+      </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="main-wrapper">
+
+      <!-- ================= ABA 1: CONSULTADOR OLX ================= -->
+      <section class="tab-pane active" id="tab-consultador">
+        <div class="hero-banner">
+          <div class="hero-subtitle-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            MOTOR DE RASPAGEM SCRAPERAPI • VALIDAÇÃO EM TEMPO REAL
+          </div>
+          <h1 class="hero-title">CONSULTADOR & ANALISADOR OLX BRASIL</h1>
+          <p class="hero-description">
+            Extração autêntica e em tempo real de anúncios da OLX Brasil. Análise profunda de preços médios, desvio padrão, verificação de vendedores e detecção de riscos.
+          </p>
+        </div>
+
+        <!-- Card de Filtros e Busca com Dropdowns Customizados -->
+        <div class="control-glass-card">
+          <div class="search-primary-row">
+            <div class="input-with-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="search-keyword" class="cyber-input" placeholder="O que você está procurando? (Ex: iPhone 15, Honda Civic, Apartamento, Notebook Dell)" aria-label="Termo de busca de anúncios">
+            </div>
+            <button id="search-submit-btn" class="cyber-btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              Puxar Anúncios Reais
+            </button>
+          </div>
+
+          <!-- Filtros de Estado, Categoria, Faixas de Preço e Ordenação -->
+          <div class="filters-grid">
+            <div class="filter-group">
+              <label class="filter-label">Estado (UF)</label>
+              <div id="dropdown-state-container"></div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label">Categoria</label>
+              <div id="dropdown-category-container"></div>
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label" for="search-min-price">Preço Mínimo (R$)</label>
+              <input type="number" id="search-min-price" class="cyber-input filter-num-input" placeholder="Ex: 500">
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label" for="search-max-price">Preço Máximo (R$)</label>
+              <input type="number" id="search-max-price" class="cyber-input filter-num-input" placeholder="Ex: 5000">
+            </div>
+
+            <div class="filter-group">
+              <label class="filter-label">Ordenação</label>
+              <div id="dropdown-sort-container"></div>
+            </div>
+          </div>
+
+          <!-- Bloco Avançado de Extração & Filtros de Leads Reais -->
+          <div class="advanced-extraction-wrapper mt-6">
+            <div class="filter-group mb-5">
+              <label class="filter-label" for="search-pages-input">Páginas (1–30)</label>
+              <input type="number" id="search-pages-input" class="cyber-input filter-num-input max-w-200" min="1" max="30" value="1" placeholder="Ex: 10" aria-label="Número de páginas">
+            </div>
+
+            <div class="advanced-cards-stack">
+              <!-- Card 1: Buscar Descrições Completas -->
+              <label class="advanced-option-card" for="check-fetch-descriptions">
+                <div class="option-card-checkbox-col">
+                  <input type="checkbox" id="check-fetch-descriptions" class="cyber-checkbox-native">
+                  <span class="cyber-checkbox-box">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                </div>
+                <div class="option-card-content-col">
+                  <div class="option-card-header-row">
+                    <span class="option-card-title">Buscar Descrições Completas</span>
+                    <span class="badge-recommended">RECOMENDADO</span>
+                  </div>
+                  <p class="option-card-desc">
+                    Abre cada anúncio individualmente para extrair telefones da descrição. Aumenta MUITO a taxa de sucesso (consome 1 crédito extra por anúncio).
+                  </p>
+                </div>
+              </label>
+
+              <!-- Card 2: Somente vendedores novos (0 vendas) -->
+              <label class="advanced-option-card" for="check-only-new-sellers">
+                <div class="option-card-checkbox-col">
+                  <input type="checkbox" id="check-only-new-sellers" class="cyber-checkbox-native">
+                  <span class="cyber-checkbox-box">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                </div>
+                <div class="option-card-content-col">
+                  <div class="option-card-header-row">
+                    <span class="option-card-title">Somente vendedores novos (0 vendas)</span>
+                    <span class="badge-filter">FILTRO</span>
+                  </div>
+                  <p class="option-card-desc">
+                    Usa os contadores públicos da OLX (vendas concluídas, anúncios ativos e tipo de anunciante). Vendedores profissionais ou com vendas são descartados <em>antes</em> de abrir o anúncio — por isso a extração fica ainda mais rápida e barata.
+                  </p>
+                  <div class="option-inline-subfilter" onclick="event.stopPropagation()">
+                    <span class="subfilter-label">Máx. anúncios nos últimos 180 dias:</span>
+                    <input type="number" id="input-max-ads-180d" class="cyber-input inline-compact-input" value="3" min="1" max="50">
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUD de Métricas 3D de Preço -->
+        <div class="metrics-hud">
+          <div class="hud-card">
+            <div class="hud-header">
+              <span class="hud-title">Média de Preço</span>
+              <div class="hud-icon-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+              </div>
+            </div>
+            <div class="hud-value" id="hud-avg-price">R$ 0,00</div>
+            <div class="hud-footer-note">Calculada sobre os anúncios ativos</div>
+          </div>
+
+          <div class="hud-card">
+            <div class="hud-header">
+              <span class="hud-title">Menor Preço</span>
+              <div class="hud-icon-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="hud-value" id="hud-min-price">R$ 0,00</div>
+            <div class="hud-footer-note">Piso do lote consultado</div>
+          </div>
+
+          <div class="hud-card">
+            <div class="hud-header">
+              <span class="hud-title">Maior Preço</span>
+              <div class="hud-icon-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+              </div>
+            </div>
+            <div class="hud-value" id="hud-max-price">R$ 0,00</div>
+            <div class="hud-footer-note">Teto do produto pesquisado</div>
+          </div>
+
+          <div class="hud-card">
+            <div class="hud-header">
+              <span class="hud-title">Anúncios Reais</span>
+              <div class="hud-icon-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              </div>
+            </div>
+            <div class="hud-value" id="hud-total-ads">0</div>
+            <div class="hud-footer-note">Extraídos sem dados falsificados</div>
+          </div>
+        </div>
+
+        <!-- Gráfico de Distribuição de Preço -->
+        <div class="chart-container-card">
+          <div class="section-header-row">
+            <div class="section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              <span>Distribuição Estatística de Preços de Mercado</span>
+            </div>
+            <span class="engine-badge">MONOCHROME DATA ENGINE</span>
+          </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="price-dist-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- Grid de Anúncios Reais da OLX -->
+        <div class="section-header-row mt-8">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+            <span>Feed de Anúncios Reais Extraídos</span>
+          </div>
+          <span class="engine-badge">PROTEÇÃO ANTI-CÓPIA ATIVA</span>
+        </div>
+
+        <!-- Barra de Controle & Filtros Rápidos em Tempo Real -->
+        <div class="ads-quick-control-bar" id="ads-quick-control-bar" style="display: none;">
+          <div class="quick-control-top">
+            <div class="quick-search-box">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="quick-filter-input" class="quick-filter-input" placeholder="Filtrar por modelo, memória, detalhe ou palavra-chave nestes anúncios...">
+              <button type="button" id="quick-filter-clear-btn" class="quick-clear-btn" title="Limpar filtro" style="display: none;">✕</button>
+            </div>
+
+            <div class="quick-sort-wrap">
+              <label for="quick-sort-select" class="quick-sort-label">Ordenar:</label>
+              <select id="quick-sort-select" class="quick-sort-select">
+                <option value="default">Relevância Padrão</option>
+                <option value="cheapest">💰 Menor Preço</option>
+                <option value="expensive">💎 Maior Preço</option>
+                <option value="discount">📉 Maior % Abaixo da Média</option>
+                <option value="recent">⏱️ Mais Recentes</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="quick-control-bottom">
+            <div class="quick-chips-wrap">
+              <button type="button" class="quick-chip-btn active" data-filter="all">Todos (<span id="count-chip-all">0</span>)</button>
+              <button type="button" class="quick-chip-btn" data-filter="wpp">📱 Com WhatsApp (<span id="count-chip-wpp">0</span>)</button>
+              <button type="button" class="quick-chip-btn" data-filter="opportunity">💎 Abaixo da Média (<span id="count-chip-opp">0</span>)</button>
+              <button type="button" class="quick-chip-btn" data-filter="olxpay">🛡️ OLX Pay (<span id="count-chip-pay">0</span>)</button>
+              <button type="button" class="quick-chip-btn" data-filter="top-seller">⭐ Vendedor 5.0 (<span id="count-chip-seller">0</span>)</button>
+            </div>
+
+            <div class="quick-count-indicator" id="quick-count-indicator">
+              Exibindo 0 anúncios
+            </div>
+          </div>
+        </div>
+
+        <div class="ads-grid" id="ads-container">
+          <!-- Os anúncios serão injetados dinamicamente via app.js -->
+        </div>
+      </section>
+
+      <!-- ================= ABA 2: VALIDADOR DE ANÚNCIO INDIVIDUAL ================= -->
+      <section class="tab-pane" id="tab-validador">
+        <div class="hero-banner">
+          <div class="hero-subtitle-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            AUDITORIA PROFUNDA DE ANÚNCIOS • SCORE DE SEGURANÇA 0-100%
+          </div>
+          <h1 class="hero-title">VALIDADOR & AUDITOR DE ANÚNCIO OLX</h1>
+          <p class="hero-description">
+            Insira o link direto ou código do anúncio para validar integridade, histórico do vendedor, se o anúncio ainda está no ar, fotos reais e potenciais red flags de golpes.
+          </p>
+        </div>
+
+        <div class="validator-input-card">
+          <div class="search-primary-row mb-0">
+            <div class="input-with-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              <input type="text" id="validator-url-input" class="cyber-input" placeholder="Cole aqui a URL completa do anúncio OLX (Ex: https://sp.olx.com.br/... ou https://www.olx.com.br/...)" aria-label="URL do anúncio OLX para validação">
+            </div>
+            <button id="validator-submit-btn" class="cyber-btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              Auditar Anúncio
+            </button>
+          </div>
+        </div>
+
+        <!-- Relatório de Validação -->
+        <div class="validator-result-card" id="validator-result-card">
+          <div class="score-hud-banner">
+            <div>
+              <div class="score-header-label">Score de Segurança & Confiabilidade</div>
+              <div class="score-number-box">
+                <span class="score-number" id="report-score-num">0</span>
+                <span class="score-max-num">/100</span>
+              </div>
+            </div>
+            <div>
+              <span class="verdict-tag" id="report-verdict-tag">ANALISANDO</span>
+            </div>
+          </div>
+
+          <div class="report-title-wrap">
+            <h2 id="report-title" class="report-title-heading">-</h2>
+            <div class="report-price-row">
+              <span id="report-price" class="report-price-val">R$ 0,00</span>
+              <span id="report-location" class="report-location-val">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                Localização
+              </span>
+            </div>
+          </div>
+
+          <!-- Informações Detalhadas do Vendedor OLX -->
+          <div class="report-seller-card" id="report-seller-section">
+            <div class="report-seller-header">
+              <div class="seller-avatar-badge">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+              </div>
+              <div class="seller-header-text">
+                <div class="seller-name-row">
+                  <span class="seller-display-name" id="seller-card-name">Anunciante OLX</span>
+                  <span class="seller-pro-tag d-none" id="seller-pro-tag">CONTA PROFISSIONAL</span>
+                </div>
+                <div class="seller-submeta" id="seller-card-submeta">Localização e perfil do anunciante</div>
+              </div>
+            </div>
+            <div class="seller-metrics-grid" id="seller-metrics-grid">
+              <div class="seller-metric-pill">
+                <span class="metric-label">Vendas Concluídas</span>
+                <span class="metric-val" id="seller-completed-sales">0</span>
+              </div>
+              <div class="seller-metric-pill">
+                <span class="metric-label">Vendas Canceladas</span>
+                <span class="metric-val" id="seller-cancelled-sales">0</span>
+              </div>
+              <div class="seller-metric-pill">
+                <span class="metric-label">Verificações da Conta</span>
+                <span class="metric-val text-green" id="seller-verifications">E-mail, Telefone</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Grade de Alertas e Sinais Positivos -->
+          <div class="validation-grid-two-col">
+            <div class="flag-box">
+              <div class="flag-box-header text-status-red">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                <span>Alertas & Potenciais Riscos</span>
+              </div>
+              <div id="report-red-flags"></div>
+            </div>
+
+            <div class="flag-box">
+              <div class="flag-box-header text-status-green">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                <span>Indicadores Positivos de Segurança</span>
+              </div>
+              <div id="report-pos-flags"></div>
+            </div>
+          </div>
+
+          <!-- Painel Neural de Inteligência de Leads & Google Gemini IA -->
+          <div id="report-ai-intelligence-section" class="ai-intelligence-container d-none"></div>
+
+          <!-- Descrição Original do Anúncio -->
+          <div class="report-desc-card">
+            <div class="report-desc-title">Descrição Original do Anunciante</div>
+            <p id="report-desc" class="report-desc-content">-</p>
+          </div>
+
+          <!-- Galeria de Fotos Reais Extraídas -->
+          <div>
+            <div class="report-gallery-title">Galeria de Imagens Reais do Produto</div>
+            <div class="validator-gallery-grid" id="report-gallery"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= ABA 3: PERFIL DO LEAD ================= -->
+      <section class="tab-pane" id="tab-perfil">
+        <div class="hero-banner">
+          <div class="hero-subtitle-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+            IDENTIDADE & CRIPTOGRAFIA DO LEAD
+          </div>
+          <h1 class="hero-title">PERFIL DO OPERADOR LEAD</h1>
+          <p class="hero-description">
+            Gerencie seu vulgo e avatar personalizado sincronizado com a blindagem do sistema.
+          </p>
+        </div>
+
+        <div class="control-glass-card profile-card-wrap">
+          <div class="avatar-frame-large">
+            <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2250%22%20fill%3D%22%23111317%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2238%22%20r%3D%2218%22%20fill%3D%22%23ffffff%22%2F%3E%3Cpath%20d%3D%22M25%2082%20C25%2062%2C%2075%2062%2C%2075%2082%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E" id="my-profile-avatar" alt="Meu Avatar">
+          </div>
+          <div class="profile-info-col">
+            <h2 id="my-profile-vulgo" class="profile-name-heading">Vulgo</h2>
+            <p class="profile-desc-text">Perfil ativo no terminal supremo de consultas OLX.</p>
+            <button class="cyber-btn-primary" onclick="window.document.getElementById('header-profile-btn').click()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              Editar Vulgo ou Trocar Avatar
+            </button>
+          </div>
+        </div>
+
+        <!-- Histórico Individual -->
+        <div class="chart-container-card">
+          <div class="section-header-row">
+            <div class="section-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              <span>Minhas Últimas Puxadas & Consultas</span>
+            </div>
+            <span class="engine-badge">REGISTRO INDIVIDUAL</span>
+          </div>
+          <div id="my-history-list"></div>
+        </div>
+      </section>
+
+      <!-- ================= ABA 4: PAINEL SUPREMO ADMIN ================= -->
+      <section class="tab-pane" id="tab-admin">
+        <div class="hero-banner">
+          <div class="hero-subtitle-badge">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            COMANDO SUPREMO & MONITORAMENTO TOTAL
+          </div>
+          <h1 class="hero-title">PAINEL SUPREMO DO ADMINISTRADOR</h1>
+          <p class="hero-description">
+            Controle de acessos dos leads em tempo real, auditoria completa de puxadas, histórico de filtros e controle da blindagem cibernética.
+          </p>
+        </div>
+
+        <!-- Métricas Rápidas do Admin -->
+        <div class="metrics-hud">
+          <div class="hud-card">
+            <div class="hud-header"><span class="hud-title">Total de Leads</span></div>
+            <div class="hud-value" id="admin-metric-leads">0</div>
+          </div>
+          <div class="hud-card">
+            <div class="hud-header"><span class="hud-title">Leads Bloqueados</span></div>
+            <div class="hud-value text-status-red" id="admin-metric-blocked">0</div>
+          </div>
+          <div class="hud-card">
+            <div class="hud-header"><span class="hud-title">Total de Puxadas</span></div>
+            <div class="hud-value" id="admin-metric-puxadas">0</div>
+          </div>
+          <div class="hud-card">
+            <div class="hud-header"><span class="hud-title">IPs em Banlist</span></div>
+            <div class="hud-value" id="admin-metric-ips">0</div>
+          </div>
+        </div>
+
+        <!-- Subnavegação do Admin -->
+        <div class="admin-subnav">
+          <button class="admin-subnav-btn active" data-sub="leads">Leads Sincronizados</button>
+          <button class="admin-subnav-btn" data-sub="puxadas">Histórico de Puxadas</button>
+          <button class="admin-subnav-btn" data-sub="filtros">Estatísticas de Filtros</button>
+          <button class="admin-subnav-btn" data-sub="blindagem">Central de Blindagem & Firewall</button>
+          <button class="admin-subnav-btn" data-sub="tokens">Pool de Tokens API</button>
+        </div>
+
+        <!-- Subtab 1: Leads Sincronizados -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-leads">
+          <div class="section-title mb-5">
+            <span>Contas de Leads Criadas (Sincronização em Tempo Real)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Lead / Avatar</th>
+                  <th>Data de Entrada</th>
+                  <th>Último Login</th>
+                  <th>IP Conectado</th>
+                  <th>Consultas</th>
+                  <th>Status</th>
+                  <th>Ações Supremas</th>
+                </tr>
+              </thead>
+              <tbody id="admin-leads-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subtab 2: Histórico de Puxadas -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-puxadas">
+          <div class="section-title mb-5">
+            <span>Histórico de Consultas e Filtros Executados</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Lead (Vulgo)</th>
+                  <th>Tipo</th>
+                  <th>Termo / Anúncio</th>
+                  <th>Filtros (UF / Cat)</th>
+                  <th>Preço Médio / Valor</th>
+                  <th>Data & Hora</th>
+                </tr>
+              </thead>
+              <tbody id="admin-history-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subtab 3: Estatísticas de Filtros -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-filtros">
+          <div class="validation-grid-two-col">
+            <div class="flag-box">
+              <div class="flag-box-header"><span>Top Estados (UFs) Mais Buscados</span></div>
+              <div id="admin-top-ufs"></div>
+            </div>
+            <div class="flag-box">
+              <div class="flag-box-header"><span>Top Categorias Mais Acessadas</span></div>
+              <div id="admin-top-cats"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subtab 4: Central de Blindagem -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-blindagem">
+          <div class="section-title mb-5">
+            <span>Firewall de Blindagem Anti-DDoS e Quebra de Portas</span>
+          </div>
+          <div class="firewall-action-row">
+            <input type="text" id="admin-manual-ip-input" class="cyber-input max-w-300 filter-num-input" placeholder="Digitar IP para banir..." aria-label="Digitar IP para banir">
+            <button id="admin-block-ip-btn" class="cyber-btn-primary bg-status-red">
+              Banir IP Manualmente
+            </button>
+          </div>
+
+          <table class="cyber-table">
+            <thead>
+              <tr>
+                <th>IP Bloqueado</th>
+                <th>Motivo do Bloqueio</th>
+                <th>Data do Bloqueio</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="admin-ips-tbody"></tbody>
+          </table>
+        </div>
+
+        <!-- Subtab 5: Pool de Tokens API (ScraperAPI) -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-tokens">
+          <div class="section-title mb-5">
+            <span>Pool de Tokens ScraperAPI (Auto-Rotação & Failover de Quota)</span>
+          </div>
+          
+          <div class="firewall-action-row mb-6">
+            <input type="text" id="admin-new-token-input" class="cyber-input max-w-300 filter-num-input" placeholder="Cole uma nova chave ScraperAPI..." aria-label="Nova chave ScraperAPI">
+            <button id="admin-add-token-btn" class="cyber-btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              Adicionar Chave ao Pool
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Chave / Token API</th>
+                  <th>Serviço</th>
+                  <th>Status</th>
+                  <th>Puxadas Realizadas</th>
+                  <th>Falhas</th>
+                  <th>Último Uso</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="admin-tokens-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= MODAL: CRIAÇÃO / EDIÇÃO DE PERFIL DO LEAD ================= -->
+  <div class="cyber-modal-overlay" id="profile-modal">
+    <div class="cyber-modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Identificação do Lead</h3>
+        <button class="modal-close-btn" id="profile-modal-close" title="Fechar">✕</button>
+      </div>
+
+      <div class="modal-center-preview">
+        <div class="avatar-frame-large">
+          <img src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2250%22%20fill%3D%22%23111317%22%2F%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2238%22%20r%3D%2218%22%20fill%3D%22%23ffffff%22%2F%3E%3Cpath%20d%3D%22M25%2082%20C25%2062%2C%2075%2062%2C%2075%2082%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E" id="profile-avatar-preview" alt="Preview">
+        </div>
+      </div>
+
+      <div class="filter-group mb-5">
+        <label class="filter-label" for="profile-vulgo-input">Seu Vulgo (Codinome de Acesso)</label>
+        <input type="text" id="profile-vulgo-input" class="cyber-input pl-4" placeholder="Ex: CyberGhost, Hawk77, ShadowSp, etc.">
+      </div>
+
+      <div class="filter-label">Escolha um Avatar Cyberpunk</div>
+      <div class="avatar-preset-grid" id="avatar-preset-container"></div>
+
+      <!-- Upload da Máquina -->
+      <div class="avatar-upload-area" id="machine-avatar-upload-area">
+        <svg class="upload-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+        <div class="upload-title">Anexar Avatar da sua Máquina</div>
+        <div class="upload-desc">Clique para carregar qualquer foto do seu computador</div>
+        <input type="file" id="machine-avatar-file" class="hidden-file-input" accept="image/*" title="Anexar foto de avatar da máquina" aria-label="Anexar foto de avatar da máquina">
+      </div>
+
+      <button id="profile-save-btn" class="cyber-btn-primary w-full mt-6">
+        Salvar & Ingressar no Sistema
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: AUTENTICAÇÃO DO ADMIN SUPREMO ================= -->
+  <div class="cyber-modal-overlay" id="admin-auth-modal">
+    <div class="cyber-modal-content modal-admin-auth">
+      <div class="modal-header">
+        <h3 class="modal-title">Acesso Supremo</h3>
+        <button class="modal-close-btn" id="admin-auth-modal-close" title="Fechar">✕</button>
+      </div>
+
+      <div class="modal-center-preview">
+        <div class="admin-auth-icon-badge">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        </div>
+        <p class="admin-auth-desc">Insira a Chave de Segurança Suprema para desbloquear o painel.</p>
+      </div>
+
+      <div class="filter-group mb-5">
+        <label class="filter-label" for="admin-passkey-input">Chave Secreta</label>
+        <input type="password" id="admin-passkey-input" class="cyber-input pl-4" placeholder="Digite a chave mestra...">
+      </div>
+
+      <button id="admin-auth-submit-btn" class="cyber-btn-primary w-full">
+        Autenticar Supremo
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= 3D HOLOGRAPHIC SCANNER OVERLAY ================= -->
+  <div id="scanner-3d-overlay">
+    <canvas id="scanner-canvas"></canvas>
+    <div class="scanner-hud-text" id="scanner-hud-text">PROCESSANDO...</div>
+    <div class="scanner-telemetry-log" id="scanner-telemetry-log">Iniciando protocolo de raspagem...</div>
+  </div>
+
+  <!-- Container de Notificações Toast -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts do Sistema -->
+  <script src="/static/js/avatars.js"></script>
+  <script src="/static/js/shield.js"></script>
+  <script src="/static/js/dropdown.js"></script>
+  <script src="/static/js/three-bg.js"></script>
+  <script src="/static/js/scanner3d.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

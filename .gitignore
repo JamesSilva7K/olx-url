@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Caches e arquivos temporários
+.pytest_cache/
+.coverage
+htmlcov/
+*.log
+
+# Ambientes virtuais
+venv/
+env/
+.env
+
+# Banco de dados local SQLite (se preferir recriar limpo)
+*.sqlite3-journal
+data.sqlite-journal
+
+# IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
