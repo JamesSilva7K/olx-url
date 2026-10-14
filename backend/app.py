@@ -488,3 +488,10 @@ async def admin_toggle_token(token_id: int):
     toggle_api_token(token_id)
     log_system_event("API_TOKEN_TOGGLED", f"Status da Chave de API ID {token_id} alternado")
     return {"success": True}
+
+# Catch-all para SPA (Single Page Application) - Qualquer rota desconhecida entrega o index.html
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all_spa(full_path: str):
+    if full_path.startswith("static/"):
+        return await serve_static_fallback(full_path[len("static/"):])
+    return await serve_index()
