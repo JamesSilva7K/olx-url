@@ -809,8 +809,15 @@
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  // Troca de Tabs Principais
+  // Troca de Tabs Principais com Blindagem do Painel Supremo
   function switchTab(tabId) {
+    if (tabId === 'admin' && !state.adminToken) {
+      CyberShield.playSound('block');
+      CyberShield.showToast("Área Restrita. Autenticação Suprema Obrigatória.", "error");
+      openAdminAuthModal();
+      return;
+    }
+
     state.activeTab = tabId;
     document.querySelectorAll('.nav-tab-btn').forEach(b => {
       b.classList.toggle('active', b.getAttribute('data-tab') === tabId);
@@ -823,11 +830,7 @@
     if (tabId === 'perfil') {
       loadMyHistory();
     } else if (tabId === 'admin') {
-      if (!state.adminToken) {
-        openAdminAuthModal();
-      } else {
-        loadAdminData();
-      }
+      loadAdminData();
     }
 
     CyberShield.playSound('click');
@@ -975,7 +978,10 @@
     const keyInput = document.getElementById('admin-passkey-input');
     const key = keyInput ? keyInput.value.trim() : '';
 
-    if (!key) return;
+    if (!key) {
+      CyberShield.showToast("Digite a chave secreta mestra.", "error");
+      return;
+    }
 
     try {
       const res = await fetch('/api/admin/login', {
@@ -991,46 +997,69 @@
       const data = await res.json();
       state.adminToken = data.admin_token;
       sessionStorage.setItem('olx_admin_token', data.admin_token);
+      if (keyInput) keyInput.value = '';
       closeAdminAuthModal();
       CyberShield.showToast("Acesso ao Painel Admin Supremo Concedido!", "success");
-      loadAdminData();
+      switchTab('admin');
 
     } catch (e) {
+      CyberShield.playSound('block');
       CyberShield.showToast("Chave Suprema Incorreta. Tentativa registrada.", "error");
     }
   }
 
-  // Carrega Dados do Painel Admin Supremo
+  // Carrega Dados do Painel Admin Supremo com Cabeçalho Blindado
   async function loadAdminData() {
+    if (!state.adminToken) {
+      openAdminAuthModal();
+      return;
+    }
+
+    const adminHeaders = {
+      'Authorization': `Bearer ${state.adminToken}`
+    };
+
     try {
       // 1. Overview & Métricas
-      const ovRes = await fetch('/api/admin/overview');
+      const ovRes = await fetch('/api/admin/overview', { headers: adminHeaders });
+      if (ovRes.status === 401) {
+        logoutAdmin();
+        return;
+      }
       const ovData = await ovRes.json();
       renderAdminOverview(ovData);
 
       // 2. Leads Sincronizados
-      const leadsRes = await fetch('/api/admin/leads');
+      const leadsRes = await fetch('/api/admin/leads', { headers: adminHeaders });
       const leadsData = await leadsRes.json();
       renderAdminLeads(leadsData.leads || []);
 
       // 3. Histórico Global de Puxadas
-      const histRes = await fetch('/api/admin/history');
+      const histRes = await fetch('/api/admin/history', { headers: adminHeaders });
       const histData = await histRes.json();
       renderAdminHistory(histData.history || []);
 
       // 4. IPs Bloqueados na Blindagem
-      const ipsRes = await fetch('/api/admin/security/ips');
+      const ipsRes = await fetch('/api/admin/security/ips', { headers: adminHeaders });
       const ipsData = await ipsRes.json();
       renderAdminSecurity(ipsData.blocked_ips || []);
 
       // 5. Pool de Tokens API (ScraperAPI)
-      const tokensRes = await fetch('/api/admin/tokens');
+      const tokensRes = await fetch('/api/admin/tokens', { headers: adminHeaders });
       const tokensData = await tokensRes.json();
       renderAdminTokens(tokensData.tokens || []);
 
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function logoutAdmin() {
+    state.adminToken = null;
+    sessionStorage.removeItem('olx_admin_token');
+    switchTab('consultador');
+    openAdminAuthModal();
+    CyberShield.showToast("Sessão Suprema Expirada. Faça login novamente.", "error");
   }
 
   function renderAdminOverview(data) {
@@ -1163,10 +1192,14 @@
     `).join('');
   }
 
-  // Funções Globais expostas para as ações da tabela Admin
+  // Funções Globais expostas para as ações da tabela Admin com Blindagem
   window.toggleLeadStatus = async function(leadId) {
+    if (!state.adminToken) return;
     try {
-      const res = await fetch(`/api/admin/leads/${leadId}/toggle-block`, { method: 'POST' });
+      const res = await fetch(`/api/admin/leads/${leadId}/toggle-block`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
       if (res.ok) {
         CyberShield.showToast("Status do Lead atualizado!", "success");
         loadAdminData();
@@ -1177,9 +1210,13 @@
   };
 
   window.deleteLeadItem = async function(leadId) {
+    if (!state.adminToken) return;
     if (!confirm("Deseja realmente remover este lead?")) return;
     try {
-      const res = await fetch(`/api/admin/leads/${leadId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/leads/${leadId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
       if (res.ok) {
         CyberShield.showToast("Lead excluído.", "info");
         loadAdminData();
@@ -1190,10 +1227,14 @@
   };
 
   window.unblockIpAddress = async function(ip) {
+    if (!state.adminToken) return;
     try {
       const res = await fetch('/api/admin/security/unblock-ip', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.adminToken}`
+        },
         body: JSON.stringify({ ip: ip })
       });
       if (res.ok) {
@@ -1253,8 +1294,12 @@
   }
 
   window.toggleApiToken = async function(tokenId) {
+    if (!state.adminToken) return;
     try {
-      const res = await fetch(`/api/admin/tokens/${tokenId}/toggle`, { method: 'POST' });
+      const res = await fetch(`/api/admin/tokens/${tokenId}/toggle`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
       if (res.ok) {
         CyberShield.showToast("Status da chave de API atualizado!", "success");
         loadAdminData();
@@ -1265,9 +1310,13 @@
   };
 
   window.deleteApiToken = async function(tokenId) {
+    if (!state.adminToken) return;
     if (!confirm("Deseja realmente remover esta chave do pool?")) return;
     try {
-      const res = await fetch(`/api/admin/tokens/${tokenId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/tokens/${tokenId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
       if (res.ok) {
         CyberShield.showToast("Chave removida do pool.", "info");
         loadAdminData();
@@ -1471,11 +1520,14 @@
     if (manualIpBtn && manualIpInput) {
       manualIpBtn.addEventListener('click', async () => {
         const ip = manualIpInput.value.trim();
-        if (!ip) return;
+        if (!ip || !state.adminToken) return;
         try {
           const res = await fetch('/api/admin/security/block-ip', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.adminToken}`
+            },
             body: JSON.stringify({ ip: ip, reason: "Bloqueio manual supremo" })
           });
           if (res.ok) {
@@ -1495,14 +1547,17 @@
     if (addTokenBtn && addTokenInput) {
       addTokenBtn.addEventListener('click', async () => {
         const tokenVal = addTokenInput.value.trim();
-        if (!tokenVal) {
+        if (!tokenVal || !state.adminToken) {
           CyberShield.showToast("Insira a chave da ScraperAPI.", "error");
           return;
         }
         try {
           const res = await fetch('/api/admin/tokens', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.adminToken}`
+            },
             body: JSON.stringify({ token: tokenVal, service: 'scraperapi' })
           });
           if (res.ok) {

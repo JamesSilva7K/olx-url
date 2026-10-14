@@ -405,9 +405,18 @@ async def admin_login(payload: AdminLoginPayload, request: Request):
     log_system_event("ADMIN_LOGIN_FAIL", f"Tentativa de invasão ao Painel Supremo com chave: {payload.passkey}", client_ip)
     raise HTTPException(status_code=401, detail="Chave de Acesso Suprema Inválida.")
 
+def verify_admin_auth(authorization: Optional[str] = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Autenticação Suprema Necessária.")
+    token = authorization.replace("Bearer ", "").strip()
+    vulgo = verify_session_token(token)
+    if vulgo != "ADMIN_SUPREMO":
+        raise HTTPException(status_code=401, detail="Sessão Suprema Inválida ou Expirada.")
+    return True
+
 # Overview do Admin Supremo (Métricas, Logs, Filtros mais usados)
 @app.get("/api/admin/overview")
-async def admin_overview():
+async def admin_overview(auth: bool = Depends(verify_admin_auth)):
     metrics = get_admin_metrics()
     filter_stats = get_filter_stats()
     return {
@@ -417,13 +426,13 @@ async def admin_overview():
 
 # Lista de Leads com Sincronização de Avatares, Nomes, Entradas e Status
 @app.get("/api/admin/leads")
-async def admin_list_leads():
+async def admin_list_leads(auth: bool = Depends(verify_admin_auth)):
     leads = list_leads()
     return {"leads": leads}
 
 # Bloqueio / Desbloqueio de Lead em tempo real
 @app.post("/api/admin/leads/{lead_id}/toggle-block")
-async def admin_toggle_block(lead_id: int):
+async def admin_toggle_block(lead_id: int, auth: bool = Depends(verify_admin_auth)):
     new_status = toggle_lead_block(lead_id)
     if not new_status:
         raise HTTPException(status_code=404, detail="Lead não encontrado.")
@@ -432,31 +441,31 @@ async def admin_toggle_block(lead_id: int):
 
 # Excluir Lead
 @app.delete("/api/admin/leads/{lead_id}")
-async def admin_delete_lead(lead_id: int):
+async def admin_delete_lead(lead_id: int, auth: bool = Depends(verify_admin_auth)):
     delete_lead(lead_id)
     log_system_event("LEAD_DELETED", f"Lead ID {lead_id} excluído pelo admin supremo")
     return {"success": True}
 
 # Histórico Completo de Puxadas para o Admin Supremo
 @app.get("/api/admin/history")
-async def admin_history(limit: int = 150):
+async def admin_history(limit: int = 150, auth: bool = Depends(verify_admin_auth)):
     puxadas = list_puxadas(limit=limit)
     return {"history": puxadas}
 
 # Gestão de IPs da Blindagem
 @app.get("/api/admin/security/ips")
-async def admin_list_ips():
+async def admin_list_ips(auth: bool = Depends(verify_admin_auth)):
     ips = list_blocked_ips()
     return {"blocked_ips": ips}
 
 @app.post("/api/admin/security/block-ip")
-async def admin_block_ip(payload: BlockIpPayload):
+async def admin_block_ip(payload: BlockIpPayload, auth: bool = Depends(verify_admin_auth)):
     block_ip(payload.ip, payload.reason)
     log_system_event("MANUAL_IP_BLOCK", f"IP {payload.ip} bloqueado manualmente", payload.ip)
     return {"success": True}
 
 @app.post("/api/admin/security/unblock-ip")
-async def admin_unblock_ip(payload: BlockIpPayload):
+async def admin_unblock_ip(payload: BlockIpPayload, auth: bool = Depends(verify_admin_auth)):
     unblock_ip(payload.ip)
     log_system_event("MANUAL_IP_UNBLOCK", f"IP {payload.ip} desbloqueado", payload.ip)
     return {"success": True}
@@ -465,12 +474,12 @@ async def admin_unblock_ip(payload: BlockIpPayload):
 # GESTÃO DE POOL DE TOKENS API (SCRAPERAPI) - ADMIN SUPREMO
 # ==========================================================
 @app.get("/api/admin/tokens")
-async def admin_list_tokens():
+async def admin_list_tokens(auth: bool = Depends(verify_admin_auth)):
     tokens = list_api_tokens()
     return {"tokens": tokens}
 
 @app.post("/api/admin/tokens")
-async def admin_add_token(payload: ApiTokenPayload):
+async def admin_add_token(payload: ApiTokenPayload, auth: bool = Depends(verify_admin_auth)):
     tok = payload.token.strip()
     if not tok:
         raise HTTPException(status_code=400, detail="Token não pode ser vazio.")
@@ -481,13 +490,13 @@ async def admin_add_token(payload: ApiTokenPayload):
     return {"success": True}
 
 @app.delete("/api/admin/tokens/{token_id}")
-async def admin_delete_token(token_id: int):
+async def admin_delete_token(token_id: int, auth: bool = Depends(verify_admin_auth)):
     delete_api_token(token_id)
     log_system_event("API_TOKEN_DELETED", f"Chave de API ID {token_id} removida do pool")
     return {"success": True}
 
 @app.post("/api/admin/tokens/{token_id}/toggle")
-async def admin_toggle_token(token_id: int):
+async def admin_toggle_token(token_id: int, auth: bool = Depends(verify_admin_auth)):
     toggle_api_token(token_id)
     log_system_event("API_TOKEN_TOGGLED", f"Status da Chave de API ID {token_id} alternado")
     return {"success": True}
