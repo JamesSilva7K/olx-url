@@ -439,22 +439,37 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             # Se uma página intermediária falhar, segue com os anúncios já coletados
             break
 
-    # Se a flag 'Buscar Descrições Completas' estiver ativa:
-    if fetch_full_descriptions and all_ads:
-        # Enriquece os anúncios com descrição integral e busca profunda de telefones
-        # Para velocidade e eficiência, processa até 20 anúncios em paralelo
-        target_sub_ads = all_ads[:20]
+    # Se a flag 'Buscar Descrições Completas' ou 'Somente vendedores novos' estiver ativa:
+    if (fetch_full_descriptions or only_new_sellers) and all_ads:
+        # Enriquece os anúncios com descrição integral, telefones e validação de vendedor novo
+        target_sub_ads = all_ads[:25]
 
         def enrich_ad(ad_item):
             try:
                 ad_html = fetch_olx_html(ad_item["url"])
                 ad_soup = BeautifulSoup(ad_html, "html.parser")
 
-                # Extrai descrição completa
+                # 1. Tenta extrair via dados estruturados JSON-LD primeiro (mais confiável)
                 desc = ""
-                desc_tag = ad_soup.find("span", attrs={"data-qa": "ad-description"}) or ad_soup.find("div", class_=lambda c: c and "description" in c if c else False)
-                if desc_tag:
-                    desc = desc_tag.get_text(separator=" ", strip=True)
+                for s in ad_soup.find_all("script", type="application/ld+json"):
+                    try:
+                        ld_data = json.loads(s.string)
+                        if isinstance(ld_data, dict) and ld_data.get("@type") == "Product":
+                            if ld_data.get("description"):
+                                desc = re.sub(r"<[^>]+>", " ", ld_data.get("description")).strip()
+                                break
+                    except Exception:
+                        continue
+
+                # Fallback para seletores HTML
+                if not desc:
+                    desc_tag = (
+                        ad_soup.find("span", attrs={"data-qa": "ad-description"}) or
+                        ad_soup.find("div", class_=lambda c: c and "description" in c.lower() if c else False) or
+                        ad_soup.find("p", class_=lambda c: c and "description" in c.lower() if c else False)
+                    )
+                    if desc_tag:
+                        desc = desc_tag.get_text(separator=" ", strip=True)
 
                 if desc:
                     ad_item["description"] = desc
@@ -462,24 +477,42 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                     if contact and contact.get("has_phone"):
                         ad_item["contact"] = contact
 
-                # Se o filtro de novos vendedores estiver ativo, confere contador de vendas concluídas
-                if only_new_sellers:
-                    sales_completed = 0
-                    for hist in ad_soup.find_all("div", class_=lambda c: c and "advc-seller-history__item" in c if c else False):
-                        htxt = hist.get_text(strip=True)
-                        if "conclu" in htxt.lower():
-                            m_val = re.search(r"\d+", htxt)
-                            if m_val:
-                                sales_completed = int(m_val.group(0))
+                # 2. Análise do Perfil do Vendedor (Vendas Concluídas & Anúncios nos últimos 180 dias)
+                sales_completed = 0
+                active_ads_180d = 0
+                is_pro_seller = False
 
-                    if sales_completed > 0:
+                # Busca contadores no HTML
+                for hist in ad_soup.find_all(["div", "span", "p"], class_=lambda c: c and ("seller" in c.lower() or "advc" in c.lower()) if c else False):
+                    htxt = hist.get_text(strip=True).lower()
+                    if "conclu" in htxt or "venda" in htxt:
+                        m_val = re.search(r"(\d+)\s*venda", htxt)
+                        if m_val:
+                            sales_completed = max(sales_completed, int(m_val.group(1)))
+                    if "anúncio" in htxt or "publicado" in htxt:
+                        m_ads = re.search(r"(\d+)\s*anúncio", htxt)
+                        if m_ads:
+                            active_ads_180d = max(active_ads_180d, int(m_ads.group(1)))
+                    if "loja" in htxt or "pro" in htxt or "profissional" in htxt:
+                        is_pro_seller = True
+
+                # Marca se é vendedor novo com 0 vendas
+                if sales_completed == 0 and not is_pro_seller:
+                    ad_item["is_new_seller"] = True
+
+                if only_new_sellers:
+                    # Descartar se já fez vendas anteriores
+                    if sales_completed > 0 or is_pro_seller:
+                        ad_item["_discard"] = True
+                    # Descartar se exceder o limite de anúncios dos últimos 180 dias
+                    elif max_seller_ads_180d and active_ads_180d > int(max_seller_ads_180d):
                         ad_item["_discard"] = True
 
             except Exception:
                 pass
             return ad_item
 
-        with ThreadPoolExecutor(max_workers=4) as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             list(executor.map(enrich_ad, target_sub_ads))
 
         if only_new_sellers:

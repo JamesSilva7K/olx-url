@@ -69,71 +69,119 @@
     }
   }
 
+  // Lista nativa embutida para inicialização instantânea e à prova de falhas
+  const DEFAULT_STATES = [
+    { uf: "BR", name: "Brasil (Todo o País)" },
+    { uf: "SP", name: "São Paulo" },
+    { uf: "RJ", name: "Rio de Janeiro" },
+    { uf: "MG", name: "Minas Gerais" },
+    { uf: "PR", name: "Paraná" },
+    { uf: "RS", name: "Rio de Grande do Sul" },
+    { uf: "SC", name: "Santa Catarina" },
+    { uf: "BA", name: "Bahia" },
+    { uf: "PE", name: "Pernambuco" },
+    { uf: "CE", name: "Ceará" },
+    { uf: "DF", name: "Distrito Federal" },
+    { uf: "GO", name: "Goiás" },
+    { uf: "ES", name: "Espírito Santo" },
+    { uf: "PA", name: "Pará" },
+    { uf: "AM", name: "Amazonas" },
+    { uf: "MT", name: "Mato Grosso" },
+    { uf: "MS", name: "Mato Grosso do Sul" }
+  ];
+
+  const DEFAULT_CATEGORIES = [
+    { id: "todas", name: "Todas as Categorias" },
+    { id: "autos-e-pecas", name: "Autos e Peças" },
+    { id: "carros", name: "Carros, Vans e Utilitários" },
+    { id: "motos", name: "Motos" },
+    { id: "imoveis", name: "Imóveis" },
+    { id: "celulares", name: "Celulares e Telefonia" },
+    { id: "computadores", name: "Computadores e Informática" },
+    { id: "eletronicos", name: "Eletrônicos, Áudio e Vídeo" },
+    { id: "casa", name: "Para a sua Casa" },
+    { id: "moda", name: "Moda e Beleza" },
+    { id: "musica", name: "Música e Hobbies" },
+    { id: "servicos", name: "Serviços" }
+  ];
+
   // Carrega Estados e Categorias da API e inicializa os Dropdowns Customizados
   async function loadConfig() {
+    // 1. Inicialização síncrona imediata com dados default para nunca ficar em branco
+    renderDropdowns(DEFAULT_STATES, DEFAULT_CATEGORIES);
+
     try {
       const res = await fetch('/api/config');
-      const data = await res.json();
-      state.states = data.states || [];
-      state.categories = data.categories || [];
-
-      // 1. Inicializa Dropdown de Estados (UF) com Busca integrada
-      const stateItems = state.states.map(s => ({
-        value: s.uf,
-        label: `${s.name} (${s.uf})`,
-        badge: s.uf
-      }));
-
-      state.dropdowns.state = CyberDropdown.create("#dropdown-state-container", {
-        placeholder: "Selecione o Estado",
-        items: stateItems,
-        selectedValue: "BR",
-        hasSearch: true,
-        searchPlaceholder: "Buscar Estado por nome ou UF...",
-        onChange: (val) => {
-          state.selectedState = val;
+      if (res.ok) {
+        const data = await res.json();
+        if (data.states && data.states.length) {
+          state.states = data.states;
+          state.categories = data.categories;
+          renderDropdowns(state.states, state.categories);
         }
-      });
-
-      // 2. Inicializa Dropdown de Categorias
-      const catItems = state.categories.map(c => ({
-        value: c.id,
-        label: c.name,
-        badge: ""
-      }));
-
-      state.dropdowns.category = CyberDropdown.create("#dropdown-category-container", {
-        placeholder: "Selecione a Categoria",
-        items: catItems,
-        selectedValue: "todas",
-        hasSearch: true,
-        searchPlaceholder: "Filtrar categorias...",
-        onChange: (val) => {
-          state.selectedCategory = val;
-        }
-      });
-
-      // 3. Inicializa Dropdown de Ordenação
-      const sortItems = [
-        { value: "recent", label: "⏱️ Mais Recentes (Novos Primeiro)" },
-        { value: "relevance", label: "Mais Relevantes" },
-        { value: "cheapest", label: "💰 Menor Preço" },
-        { value: "expensive", label: "💎 Maior Preço" }
-      ];
-
-      state.dropdowns.sort = CyberDropdown.create("#dropdown-sort-container", {
-        placeholder: "Ordenar por...",
-        items: sortItems,
-        selectedValue: "recent",
-        hasSearch: false,
-        onChange: (val) => {
-          state.selectedSort = val;
-        }
-      });
-
+      }
     } catch (e) {
-      console.error("Erro ao carregar configurações:", e);
+      console.warn("Usando configurações embutidas offline para estados/categorias:", e);
     }
+  }
+
+  function renderDropdowns(statesList, categoriesList) {
+    state.states = statesList;
+    state.categories = categoriesList;
+
+    // 1. Inicializa Dropdown de Estados (UF)
+    const stateItems = statesList.map(s => ({
+      value: s.uf,
+      label: s.uf === "BR" ? "Brasil (Todo o País)" : `${s.name} (${s.uf})`,
+      badge: s.uf
+    }));
+
+    state.dropdowns.state = CyberDropdown.create("#dropdown-state-container", {
+      placeholder: "Selecione o Estado",
+      items: stateItems,
+      selectedValue: state.selectedState || "BR",
+      hasSearch: true,
+      searchPlaceholder: "Buscar Estado por nome ou UF...",
+      onChange: (val) => {
+        state.selectedState = val;
+      }
+    });
+
+    // 2. Inicializa Dropdown de Categorias
+    const catItems = categoriesList.map(c => ({
+      value: c.id,
+      label: c.name,
+      badge: ""
+    }));
+
+    state.dropdowns.category = CyberDropdown.create("#dropdown-category-container", {
+      placeholder: "Selecione a Categoria",
+      items: catItems,
+      selectedValue: state.selectedCategory || "todas",
+      hasSearch: true,
+      searchPlaceholder: "Filtrar categorias...",
+      onChange: (val) => {
+        state.selectedCategory = val;
+      }
+    });
+
+    // 3. Inicializa Dropdown de Ordenação
+    const sortItems = [
+      { value: "recent", label: "⏱️ Mais Recentes (Novos Primeiro)" },
+      { value: "relevance", label: "Mais Relevantes" },
+      { value: "cheapest", label: "💰 Menor Preço" },
+      { value: "expensive", label: "💎 Maior Preço" }
+    ];
+
+    state.dropdowns.sort = CyberDropdown.create("#dropdown-sort-container", {
+      placeholder: "Ordenar por...",
+      items: sortItems,
+      selectedValue: state.selectedSort || "recent",
+      hasSearch: false,
+      onChange: (val) => {
+        state.selectedSort = val;
+      }
+    });
   }
 
   // Renderiza opções de avatar no modal de perfil usando a biblioteca vetorial
@@ -481,6 +529,12 @@
               ${a.installments ? `<div class="ad-installment-info"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg> ${a.installments}</div>` : ''}
             </div>
 
+            ${a.description ? `
+              <div class="ad-card-description-box">
+                <p class="ad-card-description-text">${a.description}</p>
+              </div>
+            ` : ''}
+
             <div class="ad-meta-info">
               <div class="ad-meta-row" title="Localização do anúncio">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -493,6 +547,7 @@
               <div class="ad-meta-row ad-seller-badge-row">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 <span>Vendedor: <strong class="text-white">${a.seller_name || 'Vendedor Particular'}</strong> <span class="seller-rating-pill">${a.seller_score || '5.0 ★'}</span></span>
+                ${a.is_new_seller ? `<span class="seller-newbie-pill" title="Conta sem histórico de vendas anteriores na OLX">🌱 0 VENDAS</span>` : ''}
               </div>
             </div>
 
