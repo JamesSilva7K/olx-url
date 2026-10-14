@@ -109,8 +109,36 @@ class AIAnalyzePayload(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def serve_index():
     index_file = os.path.join(TEMPLATES_DIR, "index.html")
+    if not os.path.exists(index_file):
+        for candidate in [
+            os.path.join(os.getcwd(), "templates", "index.html"),
+            "/var/task/templates/index.html",
+            os.path.join(PARENT_DIR, "templates", "index.html")
+        ]:
+            if os.path.exists(candidate):
+                index_file = candidate
+                break
+
     with open(index_file, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
+
+# Fallback explícito de entrega estática para ambiente Vercel
+from fastapi.responses import FileResponse
+@app.get("/static/{file_path:path}")
+async def serve_static_fallback(file_path: str):
+    file_full_path = os.path.join(STATIC_DIR, file_path)
+    if not os.path.exists(file_full_path):
+        for candidate in [
+            os.path.join(os.getcwd(), "static", file_path),
+            f"/var/task/static/{file_path}"
+        ]:
+            if os.path.exists(candidate):
+                file_full_path = candidate
+                break
+    if os.path.exists(file_full_path):
+        media_type = "text/css" if file_path.endswith(".css") else "application/javascript" if file_path.endswith(".js") else None
+        return FileResponse(file_full_path, media_type=media_type)
+    raise HTTPException(status_code=404, detail="Arquivo estático não encontrado.")
 
 # Configurações do Sistema (Estados e Categorias)
 @app.get("/api/config")
