@@ -20,6 +20,12 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         client_ip = request.client.host if request.client else "127.0.0.1"
         req_path = request.url.path.lower()
 
+        # Arquivos estáticos (CSS, JS, imagens) passam direto sem rate limit de DDoS para carregar instantaneamente
+        if req_path.startswith("/static/") or req_path == "/favicon.ico":
+            response = await call_next(request)
+            response.headers["Cache-Control"] = "public, max-age=86400"
+            return response
+
         # 1. Checagem de IP Bloqueado
         if is_ip_blocked(client_ip):
             return JSONResponse(

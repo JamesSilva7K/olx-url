@@ -27,11 +27,43 @@ app = FastAPI(title="OLX Brasil - Consultador, Validador & Painel Supremo", docs
 # Aplica middleware de blindagem cibernética
 app.add_middleware(CyberShieldMiddleware)
 
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "static")
-TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
+# Resolução dinâmica e resiliente de diretórios (compatível com local e Vercel Serverless)
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+CWD_DIR = os.getcwd()
 
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+# Localiza diretório static
+STATIC_DIR = None
+for candidate in [
+    os.path.join(PARENT_DIR, "static"),
+    os.path.join(CWD_DIR, "static"),
+    os.path.join(CURRENT_DIR, "static"),
+    "/var/task/static"
+]:
+    if os.path.exists(candidate):
+        STATIC_DIR = candidate
+        break
+
+if not STATIC_DIR:
+    STATIC_DIR = os.path.join(PARENT_DIR, "static")
+
+# Localiza diretório templates
+TEMPLATES_DIR = None
+for candidate in [
+    os.path.join(PARENT_DIR, "templates"),
+    os.path.join(CWD_DIR, "templates"),
+    os.path.join(CURRENT_DIR, "templates"),
+    "/var/task/templates"
+]:
+    if os.path.exists(candidate):
+        TEMPLATES_DIR = candidate
+        break
+
+if not TEMPLATES_DIR:
+    TEMPLATES_DIR = os.path.join(PARENT_DIR, "templates")
+
+if os.path.exists(STATIC_DIR):
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Schemas de Entrada
 class AuthPayload(BaseModel):
