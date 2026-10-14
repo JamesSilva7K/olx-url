@@ -4,7 +4,20 @@ SCRAPERAPI_KEY = os.environ.get("SCRAPERAPI_KEY", "")
 SCRAPERAPI_URL = "https://api.scraperapi.com/"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "admin_secret_super_key")
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.sqlite")
+
+# Detecção de ambiente Vercel / Serverless (garante escrita em /tmp para não falhar por read-only filesystem)
+if os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+    DB_PATH = "/tmp/data.sqlite"
+    # Se o banco base existir no repositório, copia para /tmp na primeira execução
+    base_db = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.sqlite")
+    if os.path.exists(base_db) and not os.path.exists(DB_PATH):
+        import shutil
+        try:
+            shutil.copyfile(base_db, DB_PATH)
+        except Exception:
+            pass
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data.sqlite")
 
 # Mapeamento completo dos 27 Estados Brasileiros (UFs) + Brasil Geral
 BRAZILIAN_STATES = [

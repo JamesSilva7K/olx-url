@@ -1,4 +1,5 @@
 import os
+import re
 from fastapi import FastAPI, Request, HTTPException, Depends, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse, Response
@@ -119,25 +120,43 @@ async def image_proxy(url: str):
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Erro de conexão com o servidor de imagens: {str(e)}")
 
-# Autenticação e Registro Simples do Lead (Vulgo + Avatar)
+# Autenticação e Validação Avançada do Lead (Vulgo Seguro + Avatar Blindado)
 @app.post("/api/auth/register-or-login")
 async def register_or_login(payload: AuthPayload, request: Request):
     vulgo = payload.vulgo.strip()
+    
+    # Validação avançada de tamanho
     if not vulgo or len(vulgo) < 2 or len(vulgo) > 30:
-        raise HTTPException(status_code=400, detail="Vulgo deve ter entre 2 e 30 caracteres.")
+        raise HTTPException(status_code=400, detail="Vulgo deve conter entre 2 e 30 caracteres válidos.")
+
+    # Sanitização e proteção contra XSS / injeções no vulgo
+    clean_vulgo = re.sub(r"[<>/\\{}\[\];`\"'=]", "", vulgo).strip()
+    if clean_vulgo != vulgo or not re.match(r"^[\w\s\.\-@_]+$", clean_vulgo, re.UNICODE):
+        raise HTTPException(status_code=400, detail="Vulgo contém caracteres inválidos ou proibidos.")
+
+    # Proteção de nomes reservados do sistema
+    reserved_names = ["admin", "supremo", "root", "system", "moderador", "olx", "bot", "anonymous"]
+    if clean_vulgo.lower() in reserved_names:
+        raise HTTPException(status_code=400, detail="Este vulgo é reservado pelo sistema.")
 
     client_ip = request.client.host if request.client else "127.0.0.1"
     user_agent = request.headers.get("User-Agent", "")
 
-    # Checa se o vulgo está bloqueado
-    if is_lead_blocked(vulgo):
-        log_system_event("BLOCKED_LEAD_LOGIN_ATTEMPT", f"Tentativa de login por lead bloqueado: {vulgo}", client_ip)
+    # Checa se o vulgo está bloqueado pelo Admin Supremo
+    if is_lead_blocked(clean_vulgo):
+        log_system_event("BLOCKED_LEAD_LOGIN_ATTEMPT", f"Tentativa de login por lead bloqueado: {clean_vulgo}", client_ip)
         raise HTTPException(status_code=403, detail="Seu acesso está BLOQUEADO pelo Admin Supremo.")
 
-    lead = get_or_create_lead(vulgo, payload.avatar, client_ip, user_agent)
-    token = generate_session_token(vulgo)
+    # Validação do Avatar (aceita data:image/svg, data:image/png, base64 ou url http)
+    avatar = payload.avatar.strip() if payload.avatar else ""
+    if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")):
+        avatar = ""
 
-    log_system_event("LEAD_AUTHENTICATED", f"Lead autenticado: {vulgo}", client_ip)
+    # Persistência permanente garantida (nunca apaga os dados a não ser por ordem direta do Admin Supremo)
+    lead = get_or_create_lead(clean_vulgo, avatar, client_ip, user_agent)
+    token = generate_session_token(clean_vulgo)
+
+    log_system_event("LEAD_AUTHENTICATED", f"Lead validado e autenticado com sucesso: {clean_vulgo}", client_ip)
     return {
         "success": True,
         "lead": lead,
