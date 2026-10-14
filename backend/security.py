@@ -21,7 +21,7 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         req_path = request.url.path.lower()
 
         # Arquivos estáticos (CSS, JS, imagens) passam direto sem rate limit de DDoS para carregar instantaneamente
-        if req_path.startswith("/static/") or req_path == "/favicon.ico":
+        if "/static/" in req_path or req_path.startswith("/static") or req_path == "/favicon.ico":
             response = await call_next(request)
             response.headers["Cache-Control"] = "public, max-age=86400"
             return response

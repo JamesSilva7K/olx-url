@@ -125,23 +125,26 @@ async def serve_index():
         return HTMLResponse(content=f.read())
 
 # Fallback explícito de entrega estática para ambiente Vercel
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 @app.get("/static/{file_path:path}")
 @app.get("/api/static/{file_path:path}")
 async def serve_static_fallback(file_path: str):
-    file_full_path = os.path.join(STATIC_DIR, file_path)
-    if not os.path.exists(file_full_path):
-        for candidate in [
-            os.path.join(os.getcwd(), "static", file_path),
-            f"/var/task/static/{file_path}"
-        ]:
-            if os.path.exists(candidate):
-                file_full_path = candidate
-                break
-    if os.path.exists(file_full_path):
-        media_type = "text/css" if file_path.endswith(".css") else "application/javascript" if file_path.endswith(".js") else None
-        return FileResponse(file_full_path, media_type=media_type)
-    raise HTTPException(status_code=404, detail="Arquivo estático não encontrado.")
+    candidates = [
+        os.path.join(STATIC_DIR, file_path) if STATIC_DIR else "",
+        os.path.join(os.getcwd(), "static", file_path),
+        os.path.join(PARENT_DIR, "static", file_path),
+        os.path.join(CURRENT_DIR, "static", file_path),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", file_path),
+        f"/var/task/static/{file_path}",
+        f"/var/task/backend/static/{file_path}"
+    ]
+    for c in candidates:
+        if c and os.path.exists(c) and os.path.isfile(c):
+            media_type = "text/css; charset=utf-8" if file_path.endswith(".css") else "application/javascript; charset=utf-8" if file_path.endswith(".js") else None
+            with open(c, "rb") as f:
+                content = f.read()
+            return Response(content=content, media_type=media_type, headers={"Cache-Control": "public, max-age=86400"})
+    raise HTTPException(status_code=404, detail=f"Arquivo estático não encontrado: {file_path}")
 
 # Configurações do Sistema (Estados e Categorias)
 @app.get("/api/config")
