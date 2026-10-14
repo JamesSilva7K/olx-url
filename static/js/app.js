@@ -905,26 +905,36 @@
   // Salvar Perfil do Lead (Vulgo + Avatar da máquina ou preset)
   async function saveLeadProfile() {
     const vulgoInput = document.getElementById('profile-vulgo-input');
+    const saveBtn = document.getElementById('profile-save-btn');
     const vulgo = vulgoInput ? vulgoInput.value.trim() : '';
 
     if (!vulgo || vulgo.length < 2) {
+      CyberShield.playSound('block');
       CyberShield.showToast("Informe um vulgo com no mínimo 2 caracteres.", "error");
+      if (vulgoInput) vulgoInput.focus();
       return;
     }
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Sincronizando...";
+    }
+
+    const leadPayload = {
+      vulgo: vulgo,
+      avatar: selectedAvatar || defaultAvatar
+    };
 
     try {
       const res = await fetch('/api/auth/register-or-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          vulgo: vulgo,
-          avatar: selectedAvatar || defaultAvatar
-        })
+        body: JSON.stringify(leadPayload)
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Erro ao salvar perfil.");
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || "Erro ao salvar perfil no servidor.");
       }
 
       const data = await res.json();
@@ -933,10 +943,28 @@
 
       updateLeadHeaderDisplay();
       closeProfileModal();
-      CyberShield.showToast(`Perfil sincronizado! Bem-vindo, ${vulgo}.`, "success");
+      CyberShield.playSound('success');
+      CyberShield.showToast(`Perfil sincronizado com a blindagem! Bem-vindo, ${vulgo}.`, "success");
 
     } catch (e) {
-      CyberShield.showToast(e.message, "error");
+      // Fallback de resiliência: se o servidor estiver sem rede, salva perfil localmente
+      const fallbackLead = {
+        id: Date.now(),
+        vulgo: vulgo,
+        avatar: selectedAvatar || defaultAvatar,
+        role: 'lead',
+        status: 'active'
+      };
+      state.currentLead = fallbackLead;
+      localStorage.setItem('olx_lead_profile', JSON.stringify(fallbackLead));
+      updateLeadHeaderDisplay();
+      closeProfileModal();
+      CyberShield.showToast(`Perfil salvo localmente no terminal: ${vulgo}`, "info");
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Salvar & Ingressar no Sistema";
+      }
     }
   }
 

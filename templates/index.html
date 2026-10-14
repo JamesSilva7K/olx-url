@@ -112,13 +112,38 @@
           <!-- Filtros de Estado, Categoria, Faixas de Preço e Ordenação -->
           <div class="filters-grid">
             <div class="filter-group">
-              <label class="filter-label">Estado (UF)</label>
-              <div id="dropdown-state-container"></div>
+              <label class="filter-label" for="search-state-select">Estado (UF)</label>
+              <div id="dropdown-state-container">
+                <select id="search-state-select" class="cyber-input filter-num-input" aria-label="Selecione o Estado">
+                  <option value="BR">Brasil (Todo o País)</option>
+                  <option value="SP">São Paulo (SP)</option>
+                  <option value="RJ">Rio de Janeiro (RJ)</option>
+                  <option value="MG">Minas Gerais (MG)</option>
+                  <option value="PR">Paraná (PR)</option>
+                  <option value="RS">Rio Grande do Sul (RS)</option>
+                  <option value="SC">Santa Catarina (SC)</option>
+                  <option value="BA">Bahia (BA)</option>
+                  <option value="DF">Distrito Federal (DF)</option>
+                  <option value="GO">Goiás (GO)</option>
+                </select>
+              </div>
             </div>
 
             <div class="filter-group">
-              <label class="filter-label">Categoria</label>
-              <div id="dropdown-category-container"></div>
+              <label class="filter-label" for="search-category-select">Categoria</label>
+              <div id="dropdown-category-container">
+                <select id="search-category-select" class="cyber-input filter-num-input" aria-label="Selecione a Categoria">
+                  <option value="todas">Todas as Categorias</option>
+                  <option value="autos-e-pecas">Autos e Peças</option>
+                  <option value="carros">Carros, Vans e Utilitários</option>
+                  <option value="motos">Motos</option>
+                  <option value="imoveis">Imóveis</option>
+                  <option value="celulares">Celulares e Telefonia</option>
+                  <option value="computadores">Computadores e Informática</option>
+                  <option value="eletronicos">Eletrônicos, Áudio e Vídeo</option>
+                  <option value="casa">Para a sua Casa</option>
+                </select>
+              </div>
             </div>
 
             <div class="filter-group">
@@ -132,8 +157,15 @@
             </div>
 
             <div class="filter-group">
-              <label class="filter-label">Ordenação</label>
-              <div id="dropdown-sort-container"></div>
+              <label class="filter-label" for="search-sort-select">Ordenação</label>
+              <div id="dropdown-sort-container">
+                <select id="search-sort-select" class="cyber-input filter-num-input" aria-label="Ordenação dos anúncios">
+                  <option value="recent">⏱️ Mais Recentes (Novos Primeiro)</option>
+                  <option value="relevance">Mais Relevantes</option>
+                  <option value="cheapest">💰 Menor Preço</option>
+                  <option value="expensive">💎 Maior Preço</option>
+                </select>
+              </div>
             </div>
           </div>
 
