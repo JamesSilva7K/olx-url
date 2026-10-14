@@ -107,6 +107,8 @@ class AIAnalyzePayload(BaseModel):
 
 # Rota Principal (Single Page Application)
 @app.get("/", response_class=HTMLResponse)
+@app.get("/api", response_class=HTMLResponse)
+@app.get("/api/", response_class=HTMLResponse)
 async def serve_index():
     index_file = os.path.join(TEMPLATES_DIR, "index.html")
     if not os.path.exists(index_file):
@@ -125,6 +127,7 @@ async def serve_index():
 # Fallback explícito de entrega estática para ambiente Vercel
 from fastapi.responses import FileResponse
 @app.get("/static/{file_path:path}")
+@app.get("/api/static/{file_path:path}")
 async def serve_static_fallback(file_path: str):
     file_full_path = os.path.join(STATIC_DIR, file_path)
     if not os.path.exists(file_full_path):
