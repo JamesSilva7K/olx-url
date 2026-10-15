@@ -185,11 +185,17 @@ def fetch_olx_html(target_url: str) -> str:
 
     last_err = None
 
+    # Detecta ambiente Serverless (Vercel) para tempos de resposta ultra-ágeis
+    is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    timeout_cs = 8 if is_serverless else 18
+    timeout_direct = 6 if is_serverless else 12
+    timeout_scraperapi = 10 if is_serverless else 22
+
     # Método 1 (Primário): CloudScraper nativo para bypass da OLX
     try:
         import cloudscraper
-        scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'linux' if os.environ.get('VERCEL') else 'windows', 'desktop': True})
-        cs_resp = scraper.get(target_url, timeout=18)
+        scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'linux' if is_serverless else 'windows', 'desktop': True})
+        cs_resp = scraper.get(target_url, timeout=timeout_cs)
         if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
             HTML_CACHE[target_url] = (now, cs_resp.text)
             return cs_resp.text
@@ -211,7 +217,7 @@ def fetch_olx_html(target_url: str) -> str:
             "Sec-Fetch-User": "?1",
             "Upgrade-Insecure-Requests": "1"
         }
-        direct_resp = requests.get(target_url, headers=direct_headers, timeout=12)
+        direct_resp = requests.get(target_url, headers=direct_headers, timeout=timeout_direct)
         if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text or "__NEXT_DATA__" in direct_resp.text):
             HTML_CACHE[target_url] = (now, direct_resp.text)
             return direct_resp.text
@@ -226,7 +232,8 @@ def fetch_olx_html(target_url: str) -> str:
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
     }
 
-    for _ in range(3):
+    max_retries = 1 if is_serverless else 3
+    for _ in range(max_retries):
         token = get_next_available_token("scraperapi", exclude_tokens=tried_tokens)
         if not token:
             token = SCRAPERAPI_KEY
@@ -244,7 +251,7 @@ def fetch_olx_html(target_url: str) -> str:
         }
 
         try:
-            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=22)
+            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=timeout_scraperapi)
             if resp.status_code in [401, 403]:
                 mark_token_exhausted(token)
                 record_token_request(token, success=False)
@@ -524,7 +531,9 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
     - Filtro antecipado de 'Somente vendedores novos (0 vendas)'
     - Extração profunda de descrições completas e telefones/WhatsApp via ThreadPool
     """
-    clamped_pages = max(1, min(30, int(pages or 1)))
+    is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    max_p = 2 if is_serverless else 30
+    clamped_pages = max(1, min(max_p, int(pages or 1)))
     all_ads = []
     seen_ids = set()
 
@@ -568,7 +577,7 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
     if (fetch_full_descriptions or only_new_sellers) and all_ads:
         # Limite otimizado para não estourar o tempo limite de execução (Serverless Vercel / Gateway)
         is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-        limit_count = 8 if is_serverless else 15
+        limit_count = 6 if is_serverless else 15
         target_sub_ads = all_ads[:limit_count]
 
         def enrich_ad(ad_item):
@@ -640,9 +649,9 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                 pass
             return ad_item
 
-        # Executa enriquecimento com concorrência otimizada
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            list(executor.map(enrich_ad, all_ads))
+        # Executa enriquecimento com concorrência otimizada apenas sobre a amostra selecionada
+        with ThreadPoolExecutor(max_workers=6 if is_serverless else 8) as executor:
+            list(executor.map(enrich_ad, target_sub_ads))
 
         if only_new_sellers:
             all_ads = [a for a in all_ads if not a.get("_discard")]
