@@ -286,22 +286,33 @@
       });
 
       const contentType = res.headers.get("content-type") || "";
+      let resText = "";
+      try {
+        resText = await res.text();
+      } catch (readErr) {
+        throw new Error("Falha ao ler dados da resposta do servidor.");
+      }
+
       if (!res.ok) {
-        let errorDetail = `Falha na busca (${res.status}).`;
-        if (contentType.includes("application/json")) {
+        let errorDetail = `Falha na requisição (${res.status}).`;
+        if (contentType.includes("application/json") || (resText && resText.trim().startsWith("{"))) {
           try {
-            const err = await res.json();
-            errorDetail = err.detail || errorDetail;
+            const err = JSON.parse(resText);
+            errorDetail = err.detail || err.message || errorDetail;
           } catch (_) {}
+        } else if (resText && resText.length < 200 && !resText.includes("<html")) {
+          errorDetail = resText.trim();
         }
         throw new Error(errorDetail);
       }
 
-      if (!contentType.includes("application/json")) {
-        throw new Error("O servidor retornou uma resposta inesperada (não-JSON). Tentando restabelecer conexão...");
+      let data;
+      try {
+        data = JSON.parse(resText);
+      } catch (jsonErr) {
+        console.error("Resposta não-JSON recebida:", resText.slice(0, 300));
+        throw new Error("O servidor retornou uma resposta inesperada (não-JSON). Verifique se o backend Python/Uvicorn está rodando.");
       }
-
-      const data = await res.json();
       Scanner3D.hide();
       CyberShield.showToast(`Puxada concluída! ${data.total_found} anúncios reais encontrados.`, "success");
 
