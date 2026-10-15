@@ -1880,13 +1880,13 @@
     }
   };
 
-  // Renderiza Tabela do Pool de Tokens API
+  // Renderiza Tabela do Pool de Tokens API com Créditos Restantes
   function renderAdminTokens(tokens) {
     const tbody = document.getElementById('admin-tokens-tbody');
     if (!tbody) return;
 
     if (tokens.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7" class="empty-table-cell">Nenhum token configurado no pool.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" class="empty-table-cell">Nenhum token configurado no pool. Adicione acima.</td></tr>`;
       return;
     }
 
@@ -1902,16 +1902,34 @@
         statusBadge = '<span class="table-status-pill pill-blocked">ESGOTADO</span>';
       }
 
+      // Créditos restantes formatados
+      let creditsDisplay = '<span class="text-muted">Não checado</span>';
+      if (t.remaining_credits >= 0) {
+        if (t.remaining_credits === 0) {
+          creditsDisplay = '<strong class="text-status-red">0 (Esgotado)</strong>';
+        } else if (t.remaining_credits < 100) {
+          creditsDisplay = `<strong class="text-status-yellow">${t.remaining_credits} ⚠️</strong>`;
+        } else {
+          creditsDisplay = `<strong class="text-status-green">${t.remaining_credits.toLocaleString('pt-BR')}</strong>`;
+        }
+      }
+
       return `
         <tr>
           <td><code class="font-mono text-white">${maskedToken}</code></td>
-          <td><span class="ad-pill-badge">${t.service.toUpperCase()}</span></td>
+          <td><span class="ad-pill-badge">${(t.service || 'scraperapi').toUpperCase()}</span></td>
           <td>${statusBadge}</td>
-          <td><strong class="text-white">${t.requests_count}</strong></td>
-          <td><span class="${t.errors_count > 0 ? 'text-status-red' : 'text-muted'}">${t.errors_count}</span></td>
-          <td>${t.last_used_at || 'Nunca'}</td>
+          <td>${creditsDisplay}</td>
+          <td><strong class="text-white">${t.requests_count || 0}</strong></td>
+          <td><span class="${t.errors_count > 0 ? 'text-status-red' : 'text-muted'}">${t.errors_count || 0}</span></td>
+          <td><small class="text-muted">${t.last_checked_at || t.last_used_at || 'Nunca'}</small></td>
           <td>
             <div class="table-actions-cell">
+              <button class="btn-table-action btn-table-audit" 
+                      title="Auditar saldo deste token"
+                      onclick="window.checkApiTokenCredits(${t.id})">
+                Auditar
+              </button>
               <button class="btn-table-action ${isActive ? 'btn-block-toggle' : 'btn-unblock'}" 
                       onclick="window.toggleApiToken(${t.id})">
                 ${isActive ? 'Desativar' : 'Ativar'}
@@ -1926,6 +1944,26 @@
       `;
     }).join('');
   }
+
+  window.checkApiTokenCredits = async function(tokenId) {
+    if (!state.adminToken) return;
+    CyberShield.showToast("Auditando saldo do token...", "info");
+    try {
+      const res = await fetch(`/api/admin/tokens/${tokenId}/check-credits`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        CyberShield.showToast(data.message, "success");
+      } else {
+        CyberShield.showToast(data.message || "Token sem saldo.", "error");
+      }
+      loadAdminData();
+    } catch (e) {
+      CyberShield.showToast("Erro ao verificar créditos.", "error");
+    }
+  };
 
   window.toggleApiToken = async function(tokenId) {
     if (!state.adminToken) return;
@@ -2380,35 +2418,60 @@
       });
     }
 
-    // Adicionar chave ScraperAPI ao pool
-    const addTokenBtn = document.getElementById('admin-add-token-btn');
-    const addTokenInput = document.getElementById('admin-new-token-input');
-    if (addTokenBtn && addTokenInput) {
-      addTokenBtn.addEventListener('click', async () => {
-        const tokenVal = addTokenInput.value.trim();
-        if (!tokenVal || !state.adminToken) {
-          CyberShield.showToast("Insira a chave da ScraperAPI.", "error");
+    // Adicionar lista de tokens em massa (Bulk)
+    const addBulkBtn = document.getElementById('admin-add-bulk-tokens-btn');
+    const bulkInput = document.getElementById('admin-bulk-tokens-input');
+    if (addBulkBtn && bulkInput) {
+      addBulkBtn.addEventListener('click', async () => {
+        const textVal = bulkInput.value.trim();
+        if (!textVal || !state.adminToken) {
+          CyberShield.showToast("Cole a lista de tokens antes de salvar.", "error");
           return;
         }
+        CyberShield.showToast("Salvando lista de tokens no pool...", "info");
         try {
-          const res = await fetch('/api/admin/tokens', {
+          const res = await fetch('/api/admin/tokens/bulk', {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${state.adminToken}`
             },
-            body: JSON.stringify({ token: tokenVal, service: 'scraperapi' })
+            body: JSON.stringify({ tokens_text: textVal, service: 'scraperapi' })
           });
-          if (res.ok) {
-            CyberShield.showToast("Chave ScraperAPI adicionada ao pool com sucesso!", "success");
-            addTokenInput.value = '';
+          const data = await res.json();
+          if (res.ok && data.success) {
+            CyberShield.showToast(data.message, "success");
+            bulkInput.value = '';
             loadAdminData();
           } else {
-            const err = await res.json();
-            CyberShield.showToast(err.detail || "Erro ao adicionar token.", "error");
+            CyberShield.showToast(data.detail || "Erro ao salvar lista de tokens.", "error");
           }
         } catch (e) {
-          CyberShield.showToast("Erro ao conectar ao servidor.", "error");
+          CyberShield.showToast("Erro de comunicação ao salvar lista.", "error");
+        }
+      });
+    }
+
+    // Auditar Saldos de Todos os Tokens
+    const checkAllBtn = document.getElementById('admin-check-all-tokens-btn');
+    if (checkAllBtn) {
+      checkAllBtn.addEventListener('click', async () => {
+        if (!state.adminToken) return;
+        CyberShield.showToast("Auditando saldos de todos os tokens do pool...", "info");
+        try {
+          const res = await fetch('/api/admin/tokens/check-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${state.adminToken}` }
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            CyberShield.showToast("Auditoria de saldos concluída com sucesso!", "success");
+            loadAdminData();
+          } else {
+            CyberShield.showToast("Erro ao auditar saldos.", "error");
+          }
+        } catch (e) {
+          CyberShield.showToast("Erro ao conectar à API.", "error");
         }
       });
     }

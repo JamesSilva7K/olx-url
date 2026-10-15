@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode, quote
 from .config import SCRAPERAPI_KEY, SCRAPERAPI_URL, BRAZILIAN_STATES, CATEGORIES
-from .database import get_next_available_token, record_token_request, mark_token_exhausted
+from .database import get_next_available_token, record_token_request, mark_token_exhausted, update_token_credits, list_api_tokens
 from .ai_engine import extract_phone_and_whatsapp, analyze_lead_intelligence, synthesize_with_gemini
 
 from datetime import datetime, timedelta
@@ -248,16 +248,29 @@ def fetch_olx_html(target_url: str) -> str:
             if resp.status_code in [401, 403]:
                 mark_token_exhausted(token)
                 record_token_request(token, success=False)
+                update_token_credits(token, remaining=0, status="exhausted")
                 continue
             
             resp.raise_for_status()
             record_token_request(token, success=True)
+            
+            # Atualiza créditos restantes caso informado pelo cabeçalho ScraperAPI
+            rem_str = resp.headers.get("sa-credits-remaining") or resp.headers.get("x-credits-remaining")
+            if rem_str and rem_str.isdigit():
+                update_token_credits(token, remaining=int(rem_str), status="ready")
+
             HTML_CACHE[target_url] = (now, resp.text)
             return resp.text
         except requests.exceptions.RequestException as e:
             record_token_request(token, success=False)
             last_err = e
             continue
+
+    # Se nenhum método conseguiu responder e os tokens do pool estão esgotados
+    all_tokens = list_api_tokens("scraperapi")
+    has_tokens = any(t["is_active"] == 1 and t["status"] != "exhausted" for t in all_tokens)
+    if not has_tokens and len(all_tokens) > 0:
+        raise RuntimeError("ATENÇÃO ADMIN SUPREMO: Todos os tokens ScraperAPI do pool estão esgotados ou sem créditos! Adicione uma nova lista de tokens no Painel Supremo para reestabelecer o pool.")
 
     if last_err:
         raise last_err

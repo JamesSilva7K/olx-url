@@ -13,7 +13,7 @@ from .database import (
     toggle_lead_block, delete_lead, is_lead_blocked, log_puxada,
     list_puxadas, get_filter_stats, is_ip_blocked, block_ip, unblock_ip,
     list_blocked_ips, get_admin_metrics, log_system_event,
-    list_api_tokens, add_api_token, delete_api_token, toggle_api_token
+    list_api_tokens, add_api_token, add_api_tokens_bulk, delete_api_token, toggle_api_token, update_token_credits
 )
 from .security import CyberShieldMiddleware, generate_session_token, verify_session_token
 from .scraper import build_olx_url, fetch_olx_html, parse_search_ads, validate_single_ad, search_olx_advanced
@@ -111,6 +111,10 @@ class BlockIpPayload(BaseModel):
 
 class ApiTokenPayload(BaseModel):
     token: str
+    service: Optional[str] = "scraperapi"
+
+class ApiTokenBulkPayload(BaseModel):
+    tokens_text: str
     service: Optional[str] = "scraperapi"
 
 class AIAnalyzePayload(BaseModel):
@@ -612,6 +616,74 @@ async def admin_add_token(payload: ApiTokenPayload, auth: bool = Depends(verify_
         raise HTTPException(status_code=400, detail="Token já existente no pool.")
     log_system_event("API_TOKEN_ADDED", f"Nova chave ScraperAPI adicionada ({tok[:8]}...)")
     return {"success": True}
+
+@app.post("/api/admin/tokens/bulk")
+async def admin_add_tokens_bulk(payload: ApiTokenBulkPayload, auth: bool = Depends(verify_admin_auth)):
+    raw_lines = re.split(r"[\r\n,;]+", payload.tokens_text)
+    clean_tokens = [t.strip() for t in raw_lines if t.strip() and len(t.strip()) >= 8]
+    if not clean_tokens:
+        raise HTTPException(status_code=400, detail="Nenhum token válido encontrado no texto enviado.")
+    
+    added = add_api_tokens_bulk(clean_tokens, payload.service or "scraperapi")
+    log_system_event("API_TOKENS_BULK_ADDED", f"{added} novos tokens adicionados em lote pelo Admin Supremo")
+    return {
+        "success": True,
+        "total_submitted": len(clean_tokens),
+        "total_added": added,
+        "message": f"{added} chaves adicionadas com sucesso ao pool!"
+    }
+
+@app.post("/api/admin/tokens/{token_id}/check-credits")
+async def admin_check_token_credits(token_id: int, auth: bool = Depends(verify_admin_auth)):
+    tokens = list_api_tokens()
+    target = next((t for t in tokens if t["id"] == token_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="Token não encontrado.")
+    
+    tok = target["token"]
+    # Valida créditos na ScraperAPI fazendo probe rápido
+    try:
+        probe_resp = requests.get(
+            "https://api.scraperapi.com/",
+            params={"api_key": tok, "url": "https://httpbin.org/ip"},
+            timeout=12
+        )
+        if probe_resp.status_code in [401, 403]:
+            update_token_credits(tok, remaining=0, status="exhausted")
+            return {"success": False, "remaining_credits": 0, "status": "exhausted", "message": "Chave sem saldo ou inválida."}
+        elif probe_resp.status_code == 200:
+            rem = probe_resp.headers.get("sa-credits-remaining") or probe_resp.headers.get("x-credits-remaining")
+            rem_val = int(rem) if rem and rem.isdigit() else 1000
+            update_token_credits(tok, remaining=rem_val, status="ready")
+            return {"success": True, "remaining_credits": rem_val, "status": "ready", "message": f"Chave válida com {rem_val} créditos!"}
+        else:
+            return {"success": False, "remaining_credits": -1, "status": target["status"], "message": f"Resposta inesperada ({probe_resp.status_code})."}
+    except Exception as e:
+        return {"success": False, "remaining_credits": -1, "status": target["status"], "message": f"Erro de conexão: {str(e)}"}
+
+@app.post("/api/admin/tokens/check-all")
+async def admin_check_all_tokens(auth: bool = Depends(verify_admin_auth)):
+    tokens = list_api_tokens("scraperapi")
+    results = []
+    for t in tokens:
+        tok = t["token"]
+        try:
+            probe = requests.get(
+                "https://api.scraperapi.com/",
+                params={"api_key": tok, "url": "https://httpbin.org/ip"},
+                timeout=8
+            )
+            if probe.status_code in [401, 403]:
+                update_token_credits(tok, remaining=0, status="exhausted")
+                results.append({"id": t["id"], "token": tok[:8], "status": "exhausted", "credits": 0})
+            elif probe.status_code == 200:
+                rem = probe.headers.get("sa-credits-remaining") or probe.headers.get("x-credits-remaining")
+                rem_val = int(rem) if rem and rem.isdigit() else 1000
+                update_token_credits(tok, remaining=rem_val, status="ready")
+                results.append({"id": t["id"], "token": tok[:8], "status": "ready", "credits": rem_val})
+        except Exception:
+            results.append({"id": t["id"], "token": tok[:8], "status": "error", "credits": -1})
+    return {"success": True, "results": results}
 
 @app.delete("/api/admin/tokens/{token_id}")
 async def admin_delete_token(token_id: int, auth: bool = Depends(verify_admin_auth)):

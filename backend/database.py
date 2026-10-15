@@ -1,6 +1,7 @@
 import sqlite3
 import datetime
 import os
+from typing import Optional
 from .config import DB_PATH
 
 def get_connection():
@@ -86,10 +87,24 @@ def init_db():
         status TEXT DEFAULT 'ready',
         requests_count INTEGER DEFAULT 0,
         errors_count INTEGER DEFAULT 0,
+        remaining_credits INTEGER DEFAULT -1,
+        total_credits INTEGER DEFAULT -1,
+        last_checked_at TEXT,
         created_at TEXT NOT NULL,
         last_used_at TEXT
     );
     """)
+
+    # Migração automática de colunas caso api_tokens já existisse
+    cursor.execute("PRAGMA table_info(api_tokens)")
+    existing_cols = [row["name"] for row in cursor.fetchall()]
+    if "remaining_credits" not in existing_cols:
+        try:
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN remaining_credits INTEGER DEFAULT -1")
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN total_credits INTEGER DEFAULT -1")
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN last_checked_at TEXT")
+        except Exception:
+            pass
 
     # Seed inicial com a chave padrão se a tabela estiver vazia
     cursor.execute("SELECT COUNT(*) as c FROM api_tokens")
@@ -437,6 +452,44 @@ def add_api_token(token_str: str, service: str = "scraperapi"):
         conn.close()
     return success
 
+def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi"):
+    """Insere múltiplos tokens validados no pool automático, ignorando duplicados."""
+    added_count = 0
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    for raw_tok in tokens_list:
+        tok = str(raw_tok).strip()
+        if not tok or len(tok) < 8:
+            continue
+        try:
+            cursor.execute("""
+            INSERT INTO api_tokens (token, service, is_active, status, requests_count, created_at)
+            VALUES (?, ?, 1, 'ready', 0, ?)
+            """, (tok, service, now_str))
+            conn.commit()
+            added_count += 1
+        except sqlite3.IntegrityError:
+            # Token já existe no banco, apenas ignora
+            pass
+
+    conn.close()
+    return added_count
+
+def update_token_credits(token_str: str, remaining: int, total: int = -1, status: str = "ready"):
+    """Atualiza saldo de créditos e status do token."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    cursor.execute("""
+    UPDATE api_tokens
+    SET remaining_credits = ?, total_credits = ?, status = ?, last_checked_at = ?
+    WHERE token = ?
+    """, (remaining, total, status, now_str, token_str))
+    conn.commit()
+    conn.close()
+
 def delete_api_token(token_id: int):
     conn = get_connection()
     cursor = conn.cursor()
@@ -455,7 +508,7 @@ def toggle_api_token(token_id: int):
         conn.commit()
     conn.close()
 
-def get_next_available_token(service: str = "scraperapi", exclude_tokens: list = None) -> str:
+def get_next_available_token(service: str = "scraperapi", exclude_tokens: list = None) -> Optional[str]:
     conn = get_connection()
     cursor = conn.cursor()
     exclude_tokens = exclude_tokens or []
@@ -464,8 +517,13 @@ def get_next_available_token(service: str = "scraperapi", exclude_tokens: list =
     query = f"""
     SELECT token FROM api_tokens 
     WHERE service = ? AND is_active = 1 AND status != 'exhausted' 
+      AND (remaining_credits > 0 OR remaining_credits = -1)
       AND token NOT IN ({placeholders})
-    ORDER BY requests_count ASC, id ASC
+    ORDER BY 
+      CASE WHEN remaining_credits > 0 THEN 0 ELSE 1 END ASC,
+      remaining_credits DESC,
+      requests_count ASC, 
+      id ASC
     LIMIT 1
     """
     params = [service] + exclude_tokens if exclude_tokens else [service]
@@ -476,16 +534,7 @@ def get_next_available_token(service: str = "scraperapi", exclude_tokens: list =
     if row:
         return row["token"]
         
-    # Se todos estiverem marcados como 'exhausted', faz auto-reset suave do pool
-    conn = get_connection()
-    cursor = conn.cursor()
-    cursor.execute("UPDATE api_tokens SET status = 'ready' WHERE service = ? AND is_active = 1", (service,))
-    conn.commit()
-    cursor.execute("SELECT token FROM api_tokens WHERE service = ? AND is_active = 1 ORDER BY requests_count ASC LIMIT 1", (service,))
-    row_reset = cursor.fetchone()
-    conn.close()
-    
-    return row_reset["token"] if row_reset else "1aec3392b82784e4578154b96887e010"
+    return None
 
 def record_token_request(token_str: str, success: bool = True):
     conn = get_connection()
