@@ -171,23 +171,38 @@ except Exception:
     _CLOUDSCRAPER_INSTANCE = None
 
 def fetch_olx_html(target_url: str) -> str:
-    """Dispara requisição com cache de 5 min, rotação de tokens ScraperAPI e fallback automático com cloudscraper."""
+    """
+    Dispara requisição com cache de 5 min:
+    1. Motor nativo Cloudscraper (sem custo, ultrarrápido e sem limites de créditos)
+    2. Rotação de tokens ScraperAPI (se configurado ou adicionado pelo painel)
+    3. Conexão direta com headers camuflados
+    """
     now = time.time()
     if target_url in HTML_CACHE:
         cached_ts, cached_html = HTML_CACHE[target_url]
         if now - cached_ts < CACHE_TTL_SECONDS:
             return cached_html
 
-    tried_tokens = []
     last_err = None
 
+    # Método 1 (Primário): CloudScraper nativo para bypass da OLX
+    if _CLOUDSCRAPER_INSTANCE is not None:
+        try:
+            cs_resp = _CLOUDSCRAPER_INSTANCE.get(target_url, timeout=18)
+            if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
+                HTML_CACHE[target_url] = (now, cs_resp.text)
+                return cs_resp.text
+        except Exception as cs_err:
+            last_err = cs_err
+
+    # Método 2: Rotação de chaves ScraperAPI
+    tried_tokens = []
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
     }
 
-    # Tenta até 3 tokens disponíveis no pool ScraperAPI
     for _ in range(3):
         token = get_next_available_token("scraperapi", exclude_tokens=tried_tokens)
         if not token:
@@ -206,8 +221,7 @@ def fetch_olx_html(target_url: str) -> str:
         }
 
         try:
-            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=25)
-            # Se a chave estiver sem créditos (401/403)
+            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=22)
             if resp.status_code in [401, 403]:
                 mark_token_exhausted(token)
                 record_token_request(token, success=False)
@@ -223,17 +237,7 @@ def fetch_olx_html(target_url: str) -> str:
             last_err = e
             continue
 
-    # Fallback 1: Motor CloudScraper nativo (bypassa Cloudflare e Proteções da OLX sem custo de API)
-    if _CLOUDSCRAPER_INSTANCE is not None:
-        try:
-            cs_resp = _CLOUDSCRAPER_INSTANCE.get(target_url, timeout=20)
-            if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
-                HTML_CACHE[target_url] = (now, cs_resp.text)
-                return cs_resp.text
-        except Exception as cs_err:
-            last_err = cs_err
-
-    # Fallback 2: Conexão Direta à OLX com Headers Camuflados
+    # Método 3: Conexão Direta à OLX com Headers Camuflados
     try:
         direct_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
