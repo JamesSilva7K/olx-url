@@ -236,9 +236,33 @@
 
           <!-- Bloco Avançado de Extração & Filtros de Leads Reais -->
           <div class="advanced-extraction-wrapper mt-6">
-            <div class="filter-group mb-5">
-              <label class="filter-label" for="search-pages-input">Páginas (1–30)</label>
-              <input type="number" id="search-pages-input" class="cyber-input filter-num-input max-w-200" min="1" max="30" value="1" placeholder="Ex: 10" aria-label="Número de páginas">
+            <div class="pages-stepper-container mb-5">
+              <div class="pages-stepper-header">
+                <label class="filter-label" for="search-pages-input">
+                  <span class="pages-label-title">Páginas de Varredura</span>
+                  <span class="pages-label-range">(1 a 30 Páginas Estritas)</span>
+                </label>
+                <span class="pages-stepper-status" id="pages-stepper-status-badge">Varredura Rápida (1 Pág ~50 anúncios)</span>
+              </div>
+              <div class="pages-stepper-controls-row">
+                <div class="pages-stepper-box">
+                  <button type="button" class="btn-stepper-nav" id="btn-pages-dec" title="Diminuir páginas" aria-label="Diminuir páginas">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                  <input type="number" id="search-pages-input" class="cyber-input pages-custom-input" min="1" max="30" value="1" placeholder="1" aria-label="Número de páginas">
+                  <button type="button" class="btn-stepper-nav" id="btn-pages-inc" title="Aumentar páginas" aria-label="Aumentar páginas">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </button>
+                </div>
+                <div class="pages-presets-list">
+                  <button type="button" class="pages-preset-chip active" data-page="1">1 Pág</button>
+                  <button type="button" class="pages-preset-chip" data-page="3">3 Págs</button>
+                  <button type="button" class="pages-preset-chip" data-page="5">5 Págs</button>
+                  <button type="button" class="pages-preset-chip" data-page="10">10 Págs</button>
+                  <button type="button" class="pages-preset-chip" data-page="20">20 Págs</button>
+                  <button type="button" class="pages-preset-chip" data-page="30">30 Págs</button>
+                </div>
+              </div>
             </div>
 
             <div class="advanced-cards-stack">

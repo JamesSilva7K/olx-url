@@ -1574,6 +1574,200 @@
     updateSliderVisuals(initialMax);
   }
 
+  // ============================================================
+  // MOTOR DE CONTROLE E PROFUNDIDADE DE PÁGINAS & CARDS 3D AVANÇADOS
+  // ============================================================
+  function setupPagesStepperAndAdvancedCards() {
+    const pagesInput = document.getElementById('search-pages-input');
+    const btnDec = document.getElementById('btn-pages-dec');
+    const btnInc = document.getElementById('btn-pages-inc');
+    const statusBadge = document.getElementById('pages-stepper-status-badge');
+    const presetChips = document.querySelectorAll('.pages-preset-chip');
+
+    // Cards Avançados & Switches
+    const cardDesc = document.getElementById('card-fetch-descriptions');
+    const checkDesc = document.getElementById('check-fetch-descriptions');
+    const cardNewSellers = document.getElementById('card-only-new-sellers');
+    const checkNewSellers = document.getElementById('check-only-new-sellers');
+
+    // Subfiltro de teto de anúncios
+    const btnStepDec = document.getElementById('btn-step-dec');
+    const btnStepInc = document.getElementById('btn-step-inc');
+    const maxAdsInput = document.getElementById('input-max-ads-180d');
+
+    function updatePagesFeedback(pageVal) {
+      const p = Math.max(1, Math.min(30, parseInt(pageVal) || 1));
+      if (pagesInput && parseInt(pagesInput.value) !== p) {
+        pagesInput.value = p;
+      }
+
+      if (statusBadge) {
+        if (p === 1) {
+          statusBadge.textContent = "Varredura Padrão (1 Pág ~50 anúncios)";
+          statusBadge.style.color = "#38bdf8";
+          statusBadge.style.borderColor = "rgba(56, 189, 248, 0.25)";
+          statusBadge.style.background = "rgba(56, 189, 248, 0.1)";
+        } else if (p <= 5) {
+          statusBadge.textContent = `Varredura Profunda (${p} Págs ~${p * 50} anúncios)`;
+          statusBadge.style.color = "#34d399";
+          statusBadge.style.borderColor = "rgba(16, 185, 129, 0.35)";
+          statusBadge.style.background = "rgba(16, 185, 129, 0.12)";
+        } else if (p <= 15) {
+          statusBadge.textContent = `Varredura Massiva (${p} Págs ~${p * 50} anúncios)`;
+          statusBadge.style.color = "#fbbf24";
+          statusBadge.style.borderColor = "rgba(245, 158, 11, 0.35)";
+          statusBadge.style.background = "rgba(245, 158, 11, 0.12)";
+        } else {
+          statusBadge.textContent = `Varredura Extrema (${p} Págs ~${p * 50} anúncios)`;
+          statusBadge.style.color = "#f43f5e";
+          statusBadge.style.borderColor = "rgba(244, 63, 94, 0.4)";
+          statusBadge.style.background = "rgba(244, 63, 94, 0.15)";
+        }
+      }
+
+      // Atualiza active nos chips de preset
+      presetChips.forEach(chip => {
+        const chipP = parseInt(chip.getAttribute('data-page')) || 1;
+        if (chipP === p) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    if (pagesInput) {
+      pagesInput.addEventListener('input', () => {
+        const v = parseInt(pagesInput.value);
+        if (!isNaN(v)) {
+          updatePagesFeedback(v);
+        }
+      });
+
+      pagesInput.addEventListener('blur', () => {
+        let v = parseInt(pagesInput.value) || 1;
+        v = Math.max(1, Math.min(30, v));
+        pagesInput.value = v;
+        updatePagesFeedback(v);
+      });
+    }
+
+    if (btnDec && pagesInput) {
+      btnDec.addEventListener('click', () => {
+        let current = parseInt(pagesInput.value) || 1;
+        if (current > 1) {
+          current -= 1;
+          pagesInput.value = current;
+          updatePagesFeedback(current);
+          CyberShield.playSound('click');
+        }
+      });
+    }
+
+    if (btnInc && pagesInput) {
+      btnInc.addEventListener('click', () => {
+        let current = parseInt(pagesInput.value) || 1;
+        if (current < 30) {
+          current += 1;
+          pagesInput.value = current;
+          updatePagesFeedback(current);
+          CyberShield.playSound('click');
+        }
+      });
+    }
+
+    presetChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const p = parseInt(chip.getAttribute('data-page')) || 1;
+        if (pagesInput) {
+          pagesInput.value = p;
+        }
+        updatePagesFeedback(p);
+        CyberShield.playSound('click');
+      });
+    });
+
+    // Sincronização visual e interatividade dos Cards 3D com Switches
+    function syncCardsChecked() {
+      if (cardDesc && checkDesc) {
+        if (checkDesc.checked) {
+          cardDesc.classList.add('active-checked');
+        } else {
+          cardDesc.classList.remove('active-checked');
+        }
+      }
+      if (cardNewSellers && checkNewSellers) {
+        if (checkNewSellers.checked) {
+          cardNewSellers.classList.add('active-checked');
+        } else {
+          cardNewSellers.classList.remove('active-checked');
+        }
+      }
+    }
+
+    if (checkDesc) {
+      checkDesc.addEventListener('change', () => {
+        syncCardsChecked();
+        CyberShield.playSound('click');
+      });
+    }
+
+    if (checkNewSellers) {
+      checkNewSellers.addEventListener('change', () => {
+        syncCardsChecked();
+        CyberShield.playSound('click');
+      });
+    }
+
+    // Clique direto no card (fora dos botões/inputs) alterna o checkbox
+    [cardDesc, cardNewSellers].forEach(c => {
+      if (c) {
+        c.addEventListener('click', (e) => {
+          if (e.target.closest('input') || e.target.closest('button') || e.target.closest('.cyber-switch-3d') || e.target.closest('.subfilter-3d-panel')) {
+            return;
+          }
+          const chk = c.querySelector('.cyber-switch-input');
+          if (chk) {
+            chk.checked = !chk.checked;
+            chk.dispatchEvent(new Event('change'));
+          }
+        });
+      }
+    });
+
+    // Subfiltro de teto de anúncios (+ / -)
+    if (btnStepDec && maxAdsInput) {
+      btnStepDec.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let cur = parseInt(maxAdsInput.value) || 3;
+        if (cur > 0) {
+          cur -= 1;
+          maxAdsInput.value = cur;
+          CyberShield.playSound('click');
+        }
+      });
+    }
+
+    if (btnStepInc && maxAdsInput) {
+      btnStepInc.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let cur = parseInt(maxAdsInput.value) || 3;
+        if (cur < 50) {
+          cur += 1;
+          maxAdsInput.value = cur;
+          CyberShield.playSound('click');
+        }
+      });
+    }
+
+    // Inicialização dos estados
+    if (pagesInput) {
+      updatePagesFeedback(parseInt(pagesInput.value) || 1);
+    }
+    syncCardsChecked();
+  }
+
+
   // Disponibiliza saveLeadProfile e funções de perfil no escopo global para acionamento resiliente
   window.saveLeadProfile = saveLeadProfile;
   window.openProfileModal = openProfileModal;
@@ -2531,9 +2725,10 @@
       });
     }
 
-    // Inicializa Motores Inteligentes (Detecção Cognitiva de Categoria & Barra de Preço Base)
+    // Inicializa Motores Inteligentes (Detecção Cognitiva de Categoria, Barra de Preço Base & Páginas Avançadas)
     setupSmartCategoryDetector();
     setupPriceBaseSlider();
+    setupPagesStepperAndAdvancedCards();
   }
 
   // Executa inicialização assim que o DOM carregar

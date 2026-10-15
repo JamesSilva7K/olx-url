@@ -605,7 +605,6 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                     if contact and contact.get("has_phone"):
                         ad_item["contact"] = contact
 
-
                 # 2. Análise do Perfil do Vendedor (Vendas Concluídas & Anúncios nos últimos 180 dias)
                 sales_completed = 0
                 active_ads_180d = 0
@@ -641,11 +640,13 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                 pass
             return ad_item
 
-        with ThreadPoolExecutor(max_workers=6) as executor:
-            list(executor.map(enrich_ad, target_sub_ads))
+        # Executa enriquecimento com concorrência otimizada
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            list(executor.map(enrich_ad, all_ads))
 
         if only_new_sellers:
             all_ads = [a for a in all_ads if not a.get("_discard")]
+
 
     # Recalcula estatísticas de preços sobre todo o pool de anúncios filtrados
     all_prices = [a["price"] for a in all_ads if a["price"] > 0]
