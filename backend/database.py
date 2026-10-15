@@ -106,6 +106,11 @@ def init_db():
             cursor.execute("ALTER TABLE api_tokens ADD COLUMN last_checked_at TEXT")
         except Exception:
             pass
+    if "details" not in existing_cols:
+        try:
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN details TEXT DEFAULT ''")
+        except Exception:
+            pass
 
     # Seed inicial com a chave padrão se a tabela estiver vazia
     cursor.execute("SELECT COUNT(*) as c FROM api_tokens")
@@ -526,16 +531,16 @@ def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi"):
     conn.close()
     return added_count
 
-def update_token_credits(token_str: str, remaining: int, total: int = -1, status: str = "ready"):
-    """Atualiza saldo de créditos e status do token."""
+def update_token_credits(token_str: str, remaining: int, total: int = -1, status: str = "ready", details: str = ""):
+    """Atualiza saldo de créditos, status e detalhes profundos do token."""
     conn = get_connection()
     cursor = conn.cursor()
     now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     cursor.execute("""
     UPDATE api_tokens
-    SET remaining_credits = ?, total_credits = ?, status = ?, last_checked_at = ?
+    SET remaining_credits = ?, total_credits = ?, status = ?, last_checked_at = ?, details = ?
     WHERE token = ?
-    """, (remaining, total, status, now_str, token_str))
+    """, (remaining, total, status, now_str, details, token_str))
     conn.commit()
     conn.close()
 
@@ -610,4 +615,60 @@ def mark_token_exhausted(token_str: str):
     cursor.execute("UPDATE api_tokens SET status = 'exhausted' WHERE token = ?", (token_str,))
     conn.commit()
     conn.close()
+
+def reset_system_all_data() -> dict:
+    """
+    Restauração e Higienização Total do Sistema:
+    - Purga todo o histórico de puxadas, buscas e filtros de teste
+    - Zera contadores de consultas de leads
+    - Limpa logs de eventos e atividades anteriores
+    - Otimiza e executa VACUUM no banco de dados SQLite
+    - Retorna resumo das contagens purgadas
+    """
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*) as c FROM puxadas")
+        purged_puxadas = cursor.fetchone()["c"]
+
+        cursor.execute("SELECT COUNT(*) as c FROM system_logs")
+        purged_logs = cursor.fetchone()["c"]
+
+        # 1. Limpa tabela de puxadas (buscas, validações, métricas acumuladas)
+        cursor.execute("DELETE FROM puxadas")
+
+        # 2. Limpa tabela de logs do sistema
+        cursor.execute("DELETE FROM system_logs")
+
+        # 3. Zera contadores de consultas de todos os leads mantendo apenas contas ativas
+        cursor.execute("UPDATE leads SET total_queries = 0")
+
+        # 4. Remove leads anônimos / temporários de teste, preservando o lead Admin
+        cursor.execute("DELETE FROM leads WHERE vulgo = 'Anônimo' OR role = 'guest'")
+
+        conn.commit()
+
+        # 5. Executa VACUUM para liberar espaço e reindexar
+        cursor.execute("VACUUM")
+        conn.commit()
+
+        # 6. Registra novo log oficial de restauração suprema
+        now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        cursor.execute("""
+        INSERT INTO system_logs (event_type, detail, ip, timestamp)
+        VALUES ('SYSTEM_PURGE_SUCCESS', 'Sistema totalmente restaurado e purgado pelo Admin Supremo. Base limpa para produção.', '127.0.0.1', ?)
+        """, (now_str,))
+        conn.commit()
+
+        return {
+            "success": True,
+            "purged_puxadas": purged_puxadas,
+            "purged_logs": purged_logs,
+            "message": "Sistema totalmente restaurado e higienizado com sucesso!"
+        }
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
 

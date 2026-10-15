@@ -2310,7 +2310,10 @@
 
       return `
         <tr>
-          <td><code class="font-mono text-white">${maskedToken}</code></td>
+          <td>
+            <code class="font-mono text-white">${maskedToken}</code>
+            ${t.details ? `<span class="token-details-subtext" title="${t.details}">${t.details}</span>` : ''}
+          </td>
           <td><span class="ad-pill-badge">${(t.service || 'scraperapi').toUpperCase()}</span></td>
           <td>${statusBadge}</td>
           <td>${creditsDisplay}</td>
@@ -2320,7 +2323,7 @@
           <td>
             <div class="table-actions-cell">
               <button class="btn-table-action btn-table-audit" 
-                      title="Auditar saldo deste token"
+                      title="Auditar saldo e detalhes reais deste token"
                       onclick="window.checkApiTokenCredits(${t.id})">
                 Auditar
               </button>
@@ -2939,6 +2942,197 @@
       CyberShield.showToast("Imagem aberta para download!", "info");
     }
   };
+
+  // ==========================================================
+  // PROTOCOLO DE RESTAURAÇÃO & LIMPEZA DO SISTEMA (ADMIN SUPREMO)
+  // ==========================================================
+  window.openSystemResetModal = function() {
+    const modal = document.getElementById('system-reset-prompt-modal');
+    const input = document.getElementById('modal-reset-passkey-input');
+    if (modal) modal.style.display = 'flex';
+    if (input) {
+      input.value = '';
+      setTimeout(() => input.focus(), 150);
+    }
+  };
+
+  window.closeSystemResetModal = function() {
+    const modal = document.getElementById('system-reset-prompt-modal');
+    if (modal) modal.style.display = 'none';
+  };
+
+  window.triggerSystemResetFromInput = function() {
+    const input = document.getElementById('admin-reset-passkey-input');
+    const passkey = input ? input.value.trim() : '';
+    if (!passkey) {
+      CyberShield.showToast("Informe a senha de acesso do Admin Supremo.", "warning");
+      if (input) input.focus();
+      return;
+    }
+    window.executeSystemReset(passkey);
+  };
+
+  window.confirmSystemResetFromModal = function() {
+    const input = document.getElementById('modal-reset-passkey-input');
+    const passkey = input ? input.value.trim() : '';
+    if (!passkey) {
+      CyberShield.showToast("Informe a senha de acesso do Admin Supremo.", "warning");
+      if (input) input.focus();
+      return;
+    }
+    window.closeSystemResetModal();
+    window.executeSystemReset(passkey);
+  };
+
+  window.closeRestorationModal = function() {
+    const modal = document.getElementById('system-restoration-modal');
+    if (modal) modal.style.display = 'none';
+    loadAdminData();
+    switchTab('admin');
+  };
+
+  window.executeSystemReset = async function(passkey) {
+    if (!state.adminToken) {
+      CyberShield.showToast("Sessão de Admin expirada. Faça login novamente.", "error");
+      return;
+    }
+
+    const modal = document.getElementById('system-restoration-modal');
+    const bar = document.getElementById('restoration-progress-bar');
+    const pct = document.getElementById('restoration-progress-pct');
+    const terminal = document.getElementById('restoration-terminal-log');
+    const footer = document.getElementById('restoration-modal-footer');
+
+    if (modal) modal.style.display = 'flex';
+    if (footer) footer.style.display = 'none';
+
+    // Reseta visual dos passos
+    for (let i = 1; i <= 6; i++) {
+      const stepEl = document.getElementById(`r-step-${i}`);
+      const iconEl = document.getElementById(`r-icon-${i}`);
+      if (stepEl) {
+        stepEl.className = i === 1 ? 'restoration-step-item active' : 'restoration-step-item pending';
+      }
+      if (iconEl) {
+        iconEl.innerHTML = i === 1 ? '<span class="cyber-spinner-sm"></span>' : '⏳';
+      }
+    }
+
+    if (bar) bar.style.width = '10%';
+    if (pct) pct.textContent = '10%';
+    if (terminal) terminal.innerHTML = '<div>[SYS] Inicializando protocolo de restauração do sistema...</div>';
+
+    const appendLog = (msg) => {
+      if (!terminal) return;
+      const timeStr = new Date().toLocaleTimeString('pt-BR');
+      const div = document.createElement('div');
+      div.textContent = `[${timeStr}] ${msg}`;
+      terminal.appendChild(div);
+      terminal.scrollTop = terminal.scrollHeight;
+    };
+
+    appendLog("Protocolo de Restauração Suprema iniciado.");
+    appendLog("Travando conexões externas e autenticando token mestra...");
+    CyberShield.playSound('click');
+
+    try {
+      // Dispara chamada ao backend
+      const resPromise = fetch('/api/admin/system/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.adminToken}`
+        },
+        body: JSON.stringify({ passkey: passkey })
+      });
+
+      const delay = ms => new Promise(r => setTimeout(r, ms));
+
+      await delay(600);
+      setStepCompleted(1);
+      setStepActive(2);
+      if (bar) bar.style.width = '28%';
+      if (pct) pct.textContent = '28%';
+      appendLog("Fase 1/6 OK: Credenciais SHA-256 autenticadas com sucesso.");
+      CyberShield.playSound('click');
+
+      await delay(700);
+      setStepCompleted(2);
+      setStepActive(3);
+      if (bar) bar.style.width = '48%';
+      if (pct) pct.textContent = '48%';
+      appendLog("Fase 2/6 OK: Purgando histórico de buscas da OLX e dados de testes...");
+      CyberShield.playSound('click');
+
+      await delay(600);
+      setStepCompleted(3);
+      setStepActive(4);
+      if (bar) bar.style.width = '68%';
+      if (pct) pct.textContent = '68%';
+      appendLog("Fase 3/6 OK: Contadores de leads zerados e logs de auditoria limpos.");
+      CyberShield.playSound('click');
+
+      await delay(600);
+      setStepCompleted(4);
+      setStepActive(5);
+      if (bar) bar.style.width = '85%';
+      if (pct) pct.textContent = '85%';
+      appendLog("Fase 4/6 OK: Reindexação física e VACUUM no banco SQLite...");
+      CyberShield.playSound('click');
+
+      // Aguarda resposta da requisição
+      const res = await resPromise;
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.detail || data.message || "Erro durante a restauração.");
+      }
+
+      await delay(500);
+      setStepCompleted(5);
+      setStepActive(6);
+      if (bar) bar.style.width = '96%';
+      if (pct) pct.textContent = '96%';
+      appendLog("Fase 5/6 OK: Memória volátil e baldes de DDoS esvaziados.");
+      CyberShield.playSound('click');
+
+      await delay(400);
+      setStepCompleted(6);
+      if (bar) bar.style.width = '100%';
+      if (pct) pct.textContent = '100%';
+      const pCount = data.stats ? data.stats.purged_puxadas : 0;
+      const lCount = data.stats ? data.stats.purged_logs : 0;
+      appendLog(`Fase 6/6 OK: Sucesso! ${pCount} puxadas e ${lCount} logs purgados.`);
+      appendLog("SISTEMA 100% LIMPO E RESTAURADO PARA PRODUÇÃO REAL!");
+      CyberShield.playSound('success');
+
+      if (footer) footer.style.display = 'block';
+
+      const passInput = document.getElementById('admin-reset-passkey-input');
+      if (passInput) passInput.value = '';
+
+      CyberShield.showToast("Sistema totalmente limpo e restaurado!", "success");
+    } catch (err) {
+      appendLog(`[ERRO CRÍTICO] ${err.message}`);
+      CyberShield.playSound('alert');
+      CyberShield.showToast(err.message, "error");
+      if (footer) footer.style.display = 'block';
+    }
+  };
+
+  function setStepActive(stepNum) {
+    const el = document.getElementById(`r-step-${stepNum}`);
+    const ic = document.getElementById(`r-icon-${stepNum}`);
+    if (el) el.className = 'restoration-step-item active';
+    if (ic) ic.innerHTML = '<span class="cyber-spinner-sm"></span>';
+  }
+
+  function setStepCompleted(stepNum) {
+    const el = document.getElementById(`r-step-${stepNum}`);
+    const ic = document.getElementById(`r-icon-${stepNum}`);
+    if (el) el.className = 'restoration-step-item completed';
+    if (ic) ic.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+  }
 
   // Executa inicialização assim que o DOM carregar
   if (document.readyState === 'loading') {

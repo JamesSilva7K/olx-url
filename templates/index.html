@@ -769,6 +769,7 @@
           <button class="admin-subnav-btn" data-sub="filtros">Estatísticas de Filtros</button>
           <button class="admin-subnav-btn" data-sub="blindagem">Central de Blindagem & Firewall</button>
           <button class="admin-subnav-btn" data-sub="tokens">Pool de Tokens API</button>
+          <button class="admin-subnav-btn text-status-red" data-sub="reset" id="admin-subnav-reset-btn">🚨 Reiniciar Sistema</button>
         </div>
 
         <!-- Subtab 1: Leads Sincronizados -->
@@ -817,8 +818,12 @@
 
         <!-- Subtab 3: Histórico de Puxadas -->
         <div class="admin-subtab-pane control-glass-card" id="admin-sub-puxadas">
-          <div class="section-title mb-5">
+          <div class="section-title mb-5 flex-between-wrap">
             <span>Histórico de Consultas e Filtros Executados</span>
+            <button class="cyber-btn-secondary btn-danger-subtle" onclick="window.openSystemResetModal()" title="Limpar dados de teste e restaurar sistema">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+              <span>Reiniciar & Limpar Testes</span>
+            </button>
           </div>
           <div class="overflow-x-auto">
             <table class="cyber-table">
@@ -926,6 +931,38 @@
               <tbody id="admin-tokens-tbody"></tbody>
             </table>
           </div>
+        <!-- Subtab 6: Reiniciar & Limpar Sistema -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-reset">
+          <div class="section-title mb-4 flex-between-wrap">
+            <span>Central de Restauração & Higienização do Sistema</span>
+            <span class="engine-badge bg-status-red text-white">ZONA CRÍTICA DE PRODUÇÃO</span>
+          </div>
+          
+          <div class="system-reset-warning-box mb-6">
+            <div class="reset-icon-wrap">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <div class="reset-text-wrap">
+              <h4 class="text-white font-bold mb-1">Purga Total de Dados de Teste & Restauração ao Estado Puro</h4>
+              <p class="text-sm text-secondary">
+                Esta ação remove todo o histórico de puxadas acumuladas, buscas antigas de testes na OLX, logs temporários e esvazia a memória do firewall. Ela reindexa e compacta o banco de dados SQLite para máxima performance em produção real.
+              </p>
+            </div>
+          </div>
+
+          <div class="reset-action-card p-6 border border-subtle rounded-xl bg-black-30 max-w-600">
+            <label class="filter-label mb-2 d-block">
+              <strong>CONFIRMAR SENHA DE ACESSO DO ADMIN SUPREMO:</strong>
+            </label>
+            <div class="flex gap-3 mb-4">
+              <input type="password" id="admin-reset-passkey-input" class="cyber-input flex-1 font-mono" placeholder="Digite sua senha de acesso..." autocomplete="current-password">
+              <button id="admin-trigger-reset-btn" class="cyber-btn-primary bg-status-red px-6" onclick="window.triggerSystemResetFromInput()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                Restaurar e Limpar Tudo
+              </button>
+            </div>
+            <small class="text-muted d-block">A restauração é acompanhada por uma tela de telemetria em tempo real mostrando cada etapa física executada no servidor.</small>
+          </div>
         </div>
         </div> <!-- Fim de admin-content-wrapper -->
       </section>
@@ -999,6 +1036,130 @@
       <button id="admin-auth-submit-btn" class="cyber-btn-primary w-full" onclick="window.submitAdminAuth ? window.submitAdminAuth() : null">
         Autenticar Supremo
       </button>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: RESTAURAÇÃO DO SISTEMA EM TEMPO REAL ================= -->
+  <div class="cyber-modal-overlay" id="system-restoration-modal" style="display:none;">
+    <div class="cyber-modal-content restoration-modal-content">
+      <div class="modal-header">
+        <div class="flex items-center gap-2">
+          <span class="live-dot-pulse bg-status-red"></span>
+          <h3 class="modal-title text-white">RESTAURAÇÃO DO SISTEMA EM TEMPO REAL</h3>
+        </div>
+        <span class="engine-badge font-mono" id="restoration-progress-pct">0%</span>
+      </div>
+
+      <div class="restoration-body p-4">
+        <!-- Barra de Progresso Futurista -->
+        <div class="restoration-progress-track mb-5">
+          <div class="restoration-progress-bar" id="restoration-progress-bar"></div>
+        </div>
+
+        <!-- Etapas Físicas em Tempo Real -->
+        <div class="restoration-steps-list mb-5" id="restoration-steps-list">
+          <div class="restoration-step-item" id="r-step-1">
+            <span class="step-num-pill">01</span>
+            <div class="step-info">
+              <strong class="step-title">Autenticação Mestra & Bloqueio de Integridade</strong>
+              <small class="step-desc">Validando credencial SHA-256 e isolando conexões ativas...</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-1"><span class="cyber-spinner-sm"></span></span>
+          </div>
+
+          <div class="restoration-step-item pending" id="r-step-2">
+            <span class="step-num-pill">02</span>
+            <div class="step-info">
+              <strong class="step-title">Purga de Dados de Teste & Histórico OLX</strong>
+              <small class="step-desc">Excluindo registros de puxadas, termos e consultas de teste...</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-2">⏳</span>
+          </div>
+
+          <div class="restoration-step-item pending" id="r-step-3">
+            <span class="step-num-pill">03</span>
+            <div class="step-info">
+              <strong class="step-title">Higienização de Logs e Métricas de Auditoria</strong>
+              <small class="step-desc">Zerando contadores de leads e arquivando logs anteriores...</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-3">⏳</span>
+          </div>
+
+          <div class="restoration-step-item pending" id="r-step-4">
+            <span class="step-num-pill">04</span>
+            <div class="step-info">
+              <strong class="step-title">Compactação e Reindexação Física (VACUUM)</strong>
+              <small class="step-desc">Otimizando tabelas SQLite e liberando espaço em disco...</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-4">⏳</span>
+          </div>
+
+          <div class="restoration-step-item pending" id="r-step-5">
+            <span class="step-num-pill">05</span>
+            <div class="step-info">
+              <strong class="step-title">Esvaziamento de Memória Volátil & Firewall</strong>
+              <small class="step-desc">Zerando baldes de rate limit DDoS e limpando cache em RAM...</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-5">⏳</span>
+          </div>
+
+          <div class="restoration-step-item pending" id="r-step-6">
+            <span class="step-num-pill">06</span>
+            <div class="step-info">
+              <strong class="step-title">Reinicialização Concluída com Sucesso</strong>
+              <small class="step-desc">Ambiente 100% puro e restaurado para produção real.</small>
+            </div>
+            <span class="step-status-icon" id="r-icon-6">⏳</span>
+          </div>
+        </div>
+
+        <!-- Terminal Log Viewer -->
+        <div class="restoration-terminal-box">
+          <div class="terminal-header">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span class="terminal-title">TELEMETRIA DE SERVIÇO EM TEMPO REAL</span>
+          </div>
+          <div class="terminal-content font-mono text-xs" id="restoration-terminal-log">
+            <div>[SYS] Inicializando protocolo de restauração do sistema...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer text-right p-4 border-t border-subtle" id="restoration-modal-footer" style="display:none;">
+        <button class="cyber-btn-primary px-6" onclick="window.closeRestorationModal()">
+          Concluir e Recarregar Painel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de Confirmação Rápida de Senha -->
+  <div class="cyber-modal-overlay" id="system-reset-prompt-modal" style="display:none;">
+    <div class="cyber-modal-content max-w-450">
+      <div class="modal-header">
+        <h3 class="modal-title text-status-red flex items-center gap-2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Reiniciar & Limpar Sistema
+        </h3>
+        <button class="modal-close-btn" onclick="window.closeSystemResetModal()">✕</button>
+      </div>
+      <div class="p-4">
+        <p class="text-secondary text-sm mb-4">
+          Você está prestes a purgar todos os dados de testes (puxadas, buscas e logs). Para executar a restauração real com tela de telemetria, confirme sua senha de acesso ao Painel Admin:
+        </p>
+        <div class="filter-group mb-4">
+          <label class="filter-label">SENHA DE ACESSO DO ADMIN:</label>
+          <input type="password" id="modal-reset-passkey-input" class="cyber-input font-mono" placeholder="Digite sua senha de acesso..." autocomplete="current-password">
+        </div>
+        <div class="flex justify-end gap-3 mt-4">
+          <button class="cyber-btn-secondary" onclick="window.closeSystemResetModal()">Cancelar</button>
+          <button class="cyber-btn-primary bg-status-red" onclick="window.confirmSystemResetFromModal()">
+            Confirmar e Restaurar
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
