@@ -798,7 +798,7 @@
       </div>
       <input type="file" id="machine-avatar-file" class="hidden-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" title="Anexar foto de avatar da máquina" aria-label="Anexar foto de avatar da máquina">
 
-      <button id="profile-save-btn" class="cyber-btn-primary w-full mt-6">
+      <button id="profile-save-btn" class="cyber-btn-primary w-full mt-6" onclick="window.saveLeadProfile ? window.saveLeadProfile() : null">
         Salvar & Ingressar no Sistema
       </button>
     </div>
@@ -809,7 +809,7 @@
     <div class="cyber-modal-content modal-admin-auth">
       <div class="modal-header">
         <h3 class="modal-title">Acesso Supremo</h3>
-        <button class="modal-close-btn" id="admin-auth-modal-close" title="Fechar">✕</button>
+        <button class="modal-close-btn" id="admin-auth-modal-close" onclick="window.closeAdminAuthModal ? window.closeAdminAuthModal() : null" title="Fechar">✕</button>
       </div>
 
       <div class="modal-center-preview">
@@ -824,7 +824,7 @@
         <input type="password" id="admin-passkey-input" class="cyber-input pl-4" placeholder="Digite a chave mestra...">
       </div>
 
-      <button id="admin-auth-submit-btn" class="cyber-btn-primary w-full">
+      <button id="admin-auth-submit-btn" class="cyber-btn-primary w-full" onclick="window.submitAdminAuth ? window.submitAdminAuth() : null">
         Autenticar Supremo
       </button>
     </div>

@@ -1115,6 +1115,13 @@
     }
   }
 
+  // Disponibiliza saveLeadProfile e funções de perfil no escopo global para acionamento resiliente
+  window.saveLeadProfile = saveLeadProfile;
+  window.openProfileModal = openProfileModal;
+  window.closeProfileModal = closeProfileModal;
+  window.submitAdminAuth = submitAdminAuth;
+  window.closeAdminAuthModal = closeAdminAuthModal;
+
   // Autenticação do Admin Supremo
   function openAdminAuthModal() {
     const modal = document.getElementById('admin-auth-modal');
