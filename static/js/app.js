@@ -549,11 +549,13 @@
             <span class="ad-price-tier-tag ${tierClass}">
               ${a.price_badge || 'Preço Normal'}
             </span>
+            ${a.lead_category ? `<span class="ad-lead-tag ${a.lead_badge_class || 'lead-regular'}" title="Temperatura de Fechamento">${a.lead_category}</span>` : ''}
             ${a.has_olx_pay ? `<span class="ad-card-olxpay-badge" title="Pagamento Seguro com Garantia OLX"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:3px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>OLX PAY</span>` : ''}
           </div>
           <div class="ad-card-body">
             <div class="ad-card-top-row">
               <span class="ad-card-id-code">ID: ${a.id || 'OLX'}</span>
+              ${a.lead_score ? `<span class="ad-lead-score-pill" title="Pontuação de Oportunidade do Lead">⚡ Lead ${a.lead_score}/100</span>` : ''}
               ${a.diff_label ? `<span class="ad-card-diff-tag">${a.diff_label}</span>` : ''}
             </div>
 

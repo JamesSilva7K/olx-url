@@ -1,3 +1,4 @@
+import os
 import re
 import json
 import time
@@ -420,6 +421,19 @@ def parse_search_ads(html_content: str, sort_by: str = "recent"):
             a["price_badge"] = "Preço Padrão"
             a["diff_label"] = "Preço a consultar"
 
+        # Inteligência Automática do Lead em Tempo Real
+        try:
+            intel = analyze_lead_intelligence(a, market_stats=stats)
+            a["lead_intel"] = intel
+            a["lead_score"] = intel.get("lead_score", 50)
+            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
+            a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
+            if not a.get("contact") or not a["contact"].get("has_phone"):
+                if intel.get("contact") and intel["contact"].get("has_phone"):
+                    a["contact"] = intel["contact"]
+        except Exception:
+            pass
+
     # Ordenação dos mais recentes para os mais antigos
     if sort_by == "recent":
         ads.sort(key=lambda x: x.get("date_timestamp", 0.0), reverse=True)
@@ -482,8 +496,10 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
 
     # Se a flag 'Buscar Descrições Completas' ou 'Somente vendedores novos' estiver ativa:
     if (fetch_full_descriptions or only_new_sellers) and all_ads:
-        # Enriquece os anúncios com descrição integral, telefones e validação de vendedor novo
-        target_sub_ads = all_ads[:25]
+        # Limite otimizado para não estourar o tempo limite de execução (Serverless Vercel / Gateway)
+        is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+        limit_count = 8 if is_serverless else 15
+        target_sub_ads = all_ads[:limit_count]
 
         def enrich_ad(ad_item):
             try:
@@ -553,7 +569,7 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                 pass
             return ad_item
 
-        with ThreadPoolExecutor(max_workers=5) as executor:
+        with ThreadPoolExecutor(max_workers=6) as executor:
             list(executor.map(enrich_ad, target_sub_ads))
 
         if only_new_sellers:
@@ -593,6 +609,19 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             a["price_tier"] = "normal"
             a["price_badge"] = "Preço Padrão"
             a["diff_label"] = "Preço a consultar"
+
+        # Inteligência Automática do Lead em Tempo Real
+        try:
+            intel = analyze_lead_intelligence(a, market_stats=stats)
+            a["lead_intel"] = intel
+            a["lead_score"] = intel.get("lead_score", 50)
+            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
+            a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
+            if not a.get("contact") or not a["contact"].get("has_phone"):
+                if intel.get("contact") and intel["contact"].get("has_phone"):
+                    a["contact"] = intel["contact"]
+        except Exception:
+            pass
 
     # Ordenação estrita no backend: mais recentes primeiro se solicitado
     if sort_by == "recent":
