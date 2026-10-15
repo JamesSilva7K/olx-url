@@ -273,12 +273,7 @@ def fetch_olx_html(target_url: str) -> str:
             last_err = e
             continue
 
-    # Se nenhum método conseguiu responder e os tokens do pool estão esgotados
-    all_tokens = list_api_tokens("scraperapi")
-    has_tokens = any(t["is_active"] == 1 and t["status"] != "exhausted" for t in all_tokens)
-    if not has_tokens and len(all_tokens) > 0:
-        raise RuntimeError("ATENÇÃO ADMIN SUPREMO: Todos os tokens ScraperAPI do pool estão esgotados ou sem créditos! Adicione uma nova lista de tokens no Painel Supremo para reestabelecer o pool.")
-
+    # Se a ScraperAPI falhou e nenhum outro método anterior respondeu
     if last_err:
         raise last_err
     raise RuntimeError("Falha de conexão com os servidores da OLX Brasil.")
@@ -569,12 +564,15 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             html = fetch_olx_html(target_url)
             page_ads, _ = parse_search_ads(html, sort_by=sort_by, min_price=min_price, max_price=max_price)
             if not page_ads:
+                # Se não encontrou anúncios nessa página, encerra o loop de páginas
+                if page_num == 1:
+                    logger.info(f"Nenhum anúncio retornado na primeira página da OLX para {target_url}")
                 break
 
             for a in page_ads:
-                if a["id"] and a["id"] in seen_ids:
+                if a.get("id") and a["id"] in seen_ids:
                     continue
-                if a["id"]:
+                if a.get("id"):
                     seen_ids.add(a["id"])
 
                 # Validação e Corte Estrito de Preço Mínimo e Máximo (Regra de Negócio)
@@ -595,8 +593,11 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
 
                 all_ads.append(a)
 
-        except Exception:
-            # Se uma página intermediária falhar, segue com os anúncios já coletados
+        except Exception as p_err:
+            logger.warning(f"Erro ao consultar página {page_num} na OLX: {p_err}")
+            # Se a primeira página falhar, registra e tenta prosseguir se houver mais páginas
+            if page_num == 1 and clamped_pages > 1:
+                continue
             break
 
     # Se a flag 'Buscar Descrições Completas' ou 'Somente vendedores novos' estiver ativa:
