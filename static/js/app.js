@@ -311,7 +311,10 @@
         data = JSON.parse(resText);
       } catch (jsonErr) {
         console.error("Resposta não-JSON recebida:", resText.slice(0, 300));
-        throw new Error("O servidor retornou uma resposta inesperada (não-JSON). Verifique se o backend Python/Uvicorn está rodando.");
+        if (resText.includes("<!DOCTYPE") || resText.includes("<html")) {
+          throw new Error("O servidor retornou HTML em vez de JSON. Verifique se o backend Python/Uvicorn está rodando na porta correta.");
+        }
+        throw new Error(resText.slice(0, 150) || "O servidor retornou uma resposta inesperada (não-JSON).");
       }
       Scanner3D.hide();
       CyberShield.showToast(`Puxada concluída! ${data.total_found} anúncios reais encontrados.`, "success");

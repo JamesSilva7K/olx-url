@@ -39,9 +39,17 @@ async def app(scope, receive, send):
         )
         if matched_path:
             clean_path = matched_path.decode("utf-8", "ignore").split("?")[0]
-            if clean_path and clean_path != "/api/index.py":
+            if clean_path and clean_path not in ["/api/index.py", "/api/index"]:
                 scope["path"] = clean_path
                 scope["raw_path"] = clean_path.encode("utf-8")
+            elif clean_path in ["/api/index.py", "/api/index"]:
+                # Se veio para /api/index.py mas a requisição original era /api/..., preserva scope["path"]
+                original_url = headers.get(b"x-url") or headers.get(b"x-real-url")
+                if original_url:
+                    clean_orig = original_url.decode("utf-8", "ignore").split("?")[0]
+                    if clean_orig.startswith("/api/"):
+                        scope["path"] = clean_orig
+                        scope["raw_path"] = clean_orig.encode("utf-8")
         elif scope.get("path") in ["/api/index.py", "/api/index"]:
             scope["path"] = "/"
             scope["raw_path"] = b"/"
