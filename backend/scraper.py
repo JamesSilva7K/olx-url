@@ -162,8 +162,15 @@ def build_olx_url(keyword: str = "", state_uf: str = "BR", category_id: str = "t
     final_url = f"{url_path}?{query_str}" if query_str else url_path
     return final_url
 
+# Fallback e motor anti-bot Cloudflare para OLX Brasil
+try:
+    import cloudscraper
+    _CLOUDSCRAPER_INSTANCE = cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+except Exception:
+    _CLOUDSCRAPER_INSTANCE = None
+
 def fetch_olx_html(target_url: str) -> str:
-    """Dispara a requisição real via ScraperAPI com cache ultra-rápido de 5 min e rotação automática de pool de tokens."""
+    """Dispara requisição com cache de 5 min, rotação de tokens ScraperAPI e fallback automático com cloudscraper."""
     now = time.time()
     if target_url in HTML_CACHE:
         cached_ts, cached_html = HTML_CACHE[target_url]
@@ -179,11 +186,13 @@ def fetch_olx_html(target_url: str) -> str:
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
     }
 
-    # Tenta até 3 tokens disponíveis no pool
+    # Tenta até 3 tokens disponíveis no pool ScraperAPI
     for _ in range(3):
         token = get_next_available_token("scraperapi", exclude_tokens=tried_tokens)
         if not token:
             token = SCRAPERAPI_KEY
+        if not token or token in tried_tokens:
+            break
         tried_tokens.append(token)
 
         payload = {
@@ -196,7 +205,7 @@ def fetch_olx_html(target_url: str) -> str:
         }
 
         try:
-            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=65)
+            resp = requests.get(SCRAPERAPI_URL, params=payload, headers=headers, timeout=25)
             # Se a chave estiver sem créditos (401/403)
             if resp.status_code in [401, 403]:
                 mark_token_exhausted(token)
@@ -213,7 +222,17 @@ def fetch_olx_html(target_url: str) -> str:
             last_err = e
             continue
 
-    # Fallback de Conexão Direta à OLX com Headers Camuflados caso os nós ScraperAPI oscilem
+    # Fallback 1: Motor CloudScraper nativo (bypassa Cloudflare e Proteções da OLX sem custo de API)
+    if _CLOUDSCRAPER_INSTANCE is not None:
+        try:
+            cs_resp = _CLOUDSCRAPER_INSTANCE.get(target_url, timeout=20)
+            if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
+                HTML_CACHE[target_url] = (now, cs_resp.text)
+                return cs_resp.text
+        except Exception as cs_err:
+            last_err = cs_err
+
+    # Fallback 2: Conexão Direta à OLX com Headers Camuflados
     try:
         direct_headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
@@ -229,7 +248,7 @@ def fetch_olx_html(target_url: str) -> str:
             "Upgrade-Insecure-Requests": "1"
         }
         direct_resp = requests.get(target_url, headers=direct_headers, timeout=12)
-        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text):
+        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text or "__NEXT_DATA__" in direct_resp.text):
             HTML_CACHE[target_url] = (now, direct_resp.text)
             return direct_resp.text
     except Exception:
