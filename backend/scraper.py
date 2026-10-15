@@ -186,16 +186,39 @@ def fetch_olx_html(target_url: str) -> str:
     last_err = None
 
     # Método 1 (Primário): CloudScraper nativo para bypass da OLX
-    if _CLOUDSCRAPER_INSTANCE is not None:
-        try:
-            cs_resp = _CLOUDSCRAPER_INSTANCE.get(target_url, timeout=18)
-            if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
-                HTML_CACHE[target_url] = (now, cs_resp.text)
-                return cs_resp.text
-        except Exception as cs_err:
-            last_err = cs_err
+    try:
+        import cloudscraper
+        scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'linux' if os.environ.get('VERCEL') else 'windows', 'desktop': True})
+        cs_resp = scraper.get(target_url, timeout=18)
+        if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
+            HTML_CACHE[target_url] = (now, cs_resp.text)
+            return cs_resp.text
+    except Exception as cs_err:
+        last_err = cs_err
 
-    # Método 2: Rotação de chaves ScraperAPI
+    # Método 2: Conexão Direta com Headers Camuflados de Navegador Real
+    try:
+        direct_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
+        }
+        direct_resp = requests.get(target_url, headers=direct_headers, timeout=12)
+        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text or "__NEXT_DATA__" in direct_resp.text):
+            HTML_CACHE[target_url] = (now, direct_resp.text)
+            return direct_resp.text
+    except Exception:
+        pass
+
+    # Método 3: Rotação de chaves ScraperAPI (apenas se configurado e ainda com créditos)
     tried_tokens = []
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -225,7 +248,6 @@ def fetch_olx_html(target_url: str) -> str:
             if resp.status_code in [401, 403]:
                 mark_token_exhausted(token)
                 record_token_request(token, success=False)
-                last_err = Exception(f"Token ScraperAPI esgotado ou inválido ({token[:8]}...)")
                 continue
             
             resp.raise_for_status()
@@ -236,28 +258,6 @@ def fetch_olx_html(target_url: str) -> str:
             record_token_request(token, success=False)
             last_err = e
             continue
-
-    # Método 3: Conexão Direta à OLX com Headers Camuflados
-    try:
-        direct_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1"
-        }
-        direct_resp = requests.get(target_url, headers=direct_headers, timeout=12)
-        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text or "__NEXT_DATA__" in direct_resp.text):
-            HTML_CACHE[target_url] = (now, direct_resp.text)
-            return direct_resp.text
-    except Exception:
-        pass
 
     if last_err:
         raise last_err

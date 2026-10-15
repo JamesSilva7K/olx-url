@@ -143,9 +143,12 @@ async def serve_index():
 @app.get("/api/health")
 @app.get("/api/ping")
 async def health_check():
+    from .scraper import _CLOUDSCRAPER_INSTANCE
     return {
         "status": "online",
         "system": "OLX Brasil Advanced Engine",
+        "version": "v1.2.0-cloudscraper-priority",
+        "has_cloudscraper": _CLOUDSCRAPER_INSTANCE is not None,
         "shield": "CYBER-SHIELD-BLINDAGEM-SUPREMA-V6",
         "real_metrics_only": True
     }
