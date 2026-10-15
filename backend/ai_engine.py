@@ -382,7 +382,7 @@ def synthesize_with_gemini(ad_title: str, ad_desc: str, price: float, stats: Opt
     for model in GEMINI_MODELS:
         try:
             endpoint = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-            res = requests.post(endpoint, json=payload, headers={"Content-Type": "application/json"}, timeout=12)
+            res = requests.post(endpoint, json=payload, headers={"Content-Type": "application/json"}, timeout=5)
             if res.status_code == 200:
                 data = res.json()
                 candidates = data.get("candidates", [])
