@@ -2952,8 +2952,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 14px;
   padding: 1rem 1.25rem;
-  backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
 }
 
 .pages-stepper-header {
@@ -3025,6 +3025,7 @@ body {
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-user-select: none;
   user-select: none;
 }
 
@@ -3051,6 +3052,7 @@ body {
   box-shadow: none !important;
   padding: 0 !important;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .pages-custom-input::-webkit-outer-spin-button,
@@ -3834,7 +3836,6 @@ body {
 @media (max-width: 768px) {
   html, body {
     -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
     touch-action: manipulation;
   }
 
@@ -3878,7 +3879,6 @@ body {
     gap: 0.35rem !important;
     overflow-x: auto;
     padding-bottom: 0.35rem;
-    -webkit-overflow-scrolling: touch;
   }
 
   .price-preset-chip {
@@ -3890,7 +3890,7 @@ body {
 
   /* Cards de Anúncios no Mobile */
   .ad-card-3d {
-    min-height: auto !important;
+    min-height: 0 !important;
   }
 
   .ad-card-inner {
