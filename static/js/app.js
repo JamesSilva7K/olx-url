@@ -747,6 +747,12 @@
     }
     if (sellerCompletedSales) sellerCompletedSales.textContent = seller.completed_sales || '0';
     if (sellerCancelledSales) sellerCancelledSales.textContent = seller.cancelled_sales || '0';
+    
+    const sellerDispatch = document.getElementById('seller-dispatch-time');
+    if (sellerDispatch) {
+      sellerDispatch.textContent = seller.tempo_despacho || 'Despacho Rápido (Garantia OLX)';
+    }
+
     if (sellerVerifications) {
       if (seller.verified_items && seller.verified_items.length > 0) {
         sellerVerifications.textContent = seller.verified_items.join(' • ');
@@ -754,6 +760,21 @@
         sellerVerifications.textContent = 'Conta Verificada pela Plataforma';
       }
     }
+
+    // Contato direto e WhatsApp Validado do Vendedor
+    const contactBar = document.getElementById('seller-contact-bar');
+    const contactNumEl = document.getElementById('seller-contact-number');
+    const directWppLink = document.getElementById('seller-direct-wpp-link');
+    const contact = seller.contact || (rep.lead_intel && rep.lead_intel.contact);
+
+    if (contactBar && contact && contact.has_phone) {
+      contactBar.classList.remove('d-none');
+      if (contactNumEl) contactNumEl.textContent = contact.phone_formatted;
+      if (directWppLink) directWppLink.href = contact.whatsapp_url;
+    } else if (contactBar) {
+      contactBar.classList.add('d-none');
+    }
+
 
     // Renderização da Inteligência Neural do Lead & Google Gemini IA
     const aiSection = document.getElementById('report-ai-intelligence-section');

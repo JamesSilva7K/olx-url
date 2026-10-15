@@ -276,7 +276,60 @@ def fetch_olx_html(target_url: str) -> str:
         raise last_err
     raise RuntimeError("Falha de conexão com os servidores da OLX Brasil.")
 
+def clean_and_structure_olx_description(raw_desc: str) -> str:
+    """
+    Limpa ruídos, scripts e blocos de boilerplate de cabeçalho/rodapé da OLX,
+    estruturando a descrição do produto de forma organizada, legível e profissional.
+    """
+    if not raw_desc:
+        return ""
+
+    # Remove tags HTML remanescentes
+    text = re.sub(r"<[^>]+>", " ", raw_desc)
+    # Decodifica quebras de linha escapadas
+    text = text.replace("\\n", "\n").replace("\\r", "").replace("\r", "")
+
+    # Padrões comuns de boilerplates e menus da OLX capturados acidentalmente
+    BOILERPLATES = [
+        r"Ir para o menu principal.*?(?=Garantia da OLX|Detalhes|\Z)",
+        r"Ir para o conteúdo da página",
+        r"Ir para o rodapé",
+        r"Menu\s*Página inicial.*?(?=Chat|Notificações|Detalhes|\Z)",
+        r"Plano Profissional.*?Notificações",
+        r"publicidade",
+        r"Dicas de segurança.*?(?=Exibir mais dicas|Denunciar anúncio|\Z)",
+        r"Exibir mais dicas",
+        r"Denunciar anúncio",
+        r"Ajuda\s*Dicas de segurança.*?(?=\Z)",
+        r"Calcule o frete.*?(?=publicidade|Detalhes|\Z)",
+        r"R\$\s*\d+OFF.*?etapa de pagamento\.\s*\*?Cupons limitados\.\s*Copiar",
+        r"Mais opções de parcelamento",
+        r"Não sei meu CEP",
+        r"Grupo OLXZAP.*?(?=\Z)",
+        r"Viva Real\s*©\s*Bom Negócio.*?(?=\Z)",
+        r"Facebook\s*YouTube\s*TikTok\s*Instagram.*?(?=\Z)",
+        r"Termos de uso\s*Política de privacidade.*?(?=\Z)"
+    ]
+
+    for b in BOILERPLATES:
+        text = re.sub(b, "\n", text, flags=re.IGNORECASE | re.DOTALL)
+
+    # Limpa linhas vazias repetidas
+    lines = [l.strip() for l in text.split("\n")]
+    filtered_lines = []
+    for l in lines:
+        if not l:
+            continue
+        # Ignora linhas com resíduos irrelevantes
+        if l.lower() in ["publicidade", "menu", "buscar", "notificações", "chat"]:
+            continue
+        filtered_lines.append(l)
+
+    structured = "\n".join(filtered_lines).strip()
+    return structured or raw_desc.strip()
+
 def parse_search_ads(html_content: str, sort_by: str = "recent"):
+
     """Extrai os anúncios reais da página da OLX Brasil ordenados do mais recente para o mais antigo por padrão."""
     soup = BeautifulSoup(html_content, "html.parser")
     ads = []
@@ -546,10 +599,12 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                         desc = desc_tag.get_text(separator=" ", strip=True)
 
                 if desc:
-                    ad_item["description"] = desc
-                    contact = extract_phone_and_whatsapp(desc + " " + ad_item["title"])
+                    desc_clean = clean_and_structure_olx_description(desc)
+                    ad_item["description"] = desc_clean
+                    contact = extract_phone_and_whatsapp(desc_clean + " " + ad_item["title"] + " " + ad_html)
                     if contact and contact.get("has_phone"):
                         ad_item["contact"] = contact
+
 
                 # 2. Análise do Perfil do Vendedor (Vendas Concluídas & Anúncios nos últimos 180 dias)
                 sales_completed = 0
@@ -757,14 +812,14 @@ def validate_single_ad(ad_url: str):
         if p_tag:
             price_val = parse_price(p_tag.get_text(strip=True))
 
-    # Descrição
+    # Descrição Original e Estruturada do Anúncio
     description = ""
     if product_data and product_data.get("description"):
-        description = re.sub(r"<[^>]+>", " ", product_data.get("description")).strip()
+        description = clean_and_structure_olx_description(product_data.get("description"))
     else:
         desc_tag = soup.find("span", attrs={"data-qa": "ad-description"}) or soup.find("div", class_=lambda c: c and "description" in c)
         if desc_tag:
-            description = desc_tag.get_text(strip=True)
+            description = clean_and_structure_olx_description(desc_tag.get_text(separator="\n", strip=True))
 
     # Imagens
     images = []
@@ -866,7 +921,9 @@ def validate_single_ad(ad_url: str):
         "completed_sales": "0",
         "cancelled_sales": "0",
         "is_pro": False,
-        "rating": "5.0 ★"
+        "rating": "5.0 ★",
+        "tempo_despacho": "",
+        "user_since": ""
     }
 
     # 1. Extração via JSON estruturado adDetail (Next.js / SSR state da OLX)
@@ -887,13 +944,22 @@ def validate_single_ad(ad_url: str):
             seller_info["is_pro"] = True
 
     # 2. Verificações do perfil do vendedor (E-mail, Telefone, Facebook, etc.)
-    for v_item in soup.find_all("div", class_=lambda c: c and "verified-item" in c.lower() if c else False):
+    for v_item in soup.find_all(["div", "span", "li"], class_=lambda c: c and ("verified-item" in c.lower() or "verification" in c.lower()) if c else False):
         t = v_item.get_text(strip=True)
         if t and t not in seller_info["verified_items"]:
             seller_info["verified_items"].append(t)
 
+    # Varredura por texto de verificações no corpo da página
+    if not seller_info["verified_items"]:
+        m_ver = re.search(r"Informaç[õo]es verificadas\s*([A-Za-z\s\-,]+)", html, re.IGNORECASE)
+        if m_ver:
+            raw_v = m_ver.group(1).strip()
+            for token in ["E-mail", "Telefone", "Facebook", "Identidade"]:
+                if token.lower() in raw_v.lower() and token not in seller_info["verified_items"]:
+                    seller_info["verified_items"].append(token)
+
     # 3. Vendas concluídas e canceladas no histórico
-    for hist_item in soup.find_all("div", class_=lambda c: c and "advc-seller-history__item" in c if c else False):
+    for hist_item in soup.find_all(["div", "span", "p"], class_=lambda c: c and ("advc-seller-history__item" in c or "seller" in c) if c else False):
         txt = hist_item.get_text(strip=True)
         if "conclu" in txt.lower():
             m_val = re.search(r"\d+", txt)
@@ -903,12 +969,24 @@ def validate_single_ad(ad_url: str):
             m_val = re.search(r"\d+", txt)
             if m_val:
                 seller_info["cancelled_sales"] = m_val.group(0)
+        elif "tempo m" in txt.lower() or "despacho" in txt.lower():
+            seller_info["tempo_despacho"] = txt
 
     # 4. Fallback no HTML caso o nome ainda seja padrão
     if seller_info["name"] in ["Anunciante OLX", "Vendedor", ""]:
-        prof_title = soup.find("div", class_=lambda c: c and "mini-profile__title" in c if c else False)
+        prof_title = (
+            soup.find("div", class_=lambda c: c and "mini-profile__title" in c if c else False) or
+            soup.find("span", class_=lambda c: c and "seller-name" in c if c else False) or
+            soup.find("h2", class_=lambda c: c and "seller" in c if c else False)
+        )
         if prof_title and prof_title.get_text(strip=True):
-            seller_info["name"] = prof_title.get_text(strip=True)
+            candidate_name = prof_title.get_text(strip=True)
+            if len(candidate_name) < 40 and not any(k in candidate_name.lower() for k in ["anúncio", "olx", "publicidade", "menu"]):
+                seller_info["name"] = candidate_name
+
+    # 5. Extração e Validação Avançada de Contato / WhatsApp Real
+    contact = extract_phone_and_whatsapp(f"{title} {description} {html}", default_ddd=seller_info.get("ddd", ""))
+    seller_info["contact"] = contact
 
     # Inteligência Neural de Lead & Síntese com Google Gemini IA
     lead_intel = analyze_lead_intelligence(
@@ -918,10 +996,12 @@ def validate_single_ad(ad_url: str):
             "price": price_val,
             "badges": [],
             "location": location,
-            "seller_name": seller_info["name"]
+            "seller_name": seller_info["name"],
+            "ddd": seller_info.get("ddd", "")
         },
         market_stats={"average": price_val}
     )
+
 
     gemini_diagnosis = synthesize_with_gemini(
         ad_title=title,
