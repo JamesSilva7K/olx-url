@@ -193,7 +193,7 @@
                     </div>
                     <!-- Switch 3D Futurista -->
                     <label class="cyber-switch-3d" for="check-fetch-descriptions" title="Ativar Varredura Profunda de Descrições">
-                      <input type="checkbox" id="check-fetch-descriptions" class="cyber-switch-input">
+                      <input type="checkbox" id="check-fetch-descriptions" class="cyber-switch-input" title="Ativar Varredura Profunda de Descrições" aria-label="Ativar Varredura Profunda de Descrições">
                       <span class="cyber-switch-track">
                         <span class="cyber-switch-thumb"></span>
                       </span>
@@ -244,7 +244,7 @@
                     </div>
                     <!-- Switch 3D Futurista -->
                     <label class="cyber-switch-3d" for="check-only-new-sellers" title="Ativar Filtro de Vendedores Sem Vendas">
-                      <input type="checkbox" id="check-only-new-sellers" class="cyber-switch-input">
+                      <input type="checkbox" id="check-only-new-sellers" class="cyber-switch-input" title="Ativar Filtro de Vendedores Sem Vendas" aria-label="Ativar Filtro de Vendedores Sem Vendas">
                       <span class="cyber-switch-track">
                         <span class="cyber-switch-thumb"></span>
                       </span>
@@ -367,12 +367,12 @@
         </div>
 
         <!-- Barra de Controle & Filtros Rápidos em Tempo Real -->
-        <div class="ads-quick-control-bar" id="ads-quick-control-bar" style="display: none;">
+        <div class="ads-quick-control-bar hidden" id="ads-quick-control-bar">
           <div class="quick-control-top">
             <div class="quick-search-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input type="text" id="quick-filter-input" class="quick-filter-input" placeholder="Filtrar por modelo, memória, detalhe ou palavra-chave nestes anúncios...">
-              <button type="button" id="quick-filter-clear-btn" class="quick-clear-btn" title="Limpar filtro" style="display: none;">✕</button>
+              <button type="button" id="quick-filter-clear-btn" class="quick-clear-btn hidden" title="Limpar filtro">✕</button>
             </div>
 
             <div class="quick-sort-wrap">
@@ -585,8 +585,8 @@
         </div>
 
         <!-- Mensagem de Bloqueio se não autenticado -->
-        <div id="admin-auth-guard" class="control-glass-card text-center p-8" style="display: none;">
-          <div class="admin-auth-icon-badge mx-auto mb-4" style="margin: 0 auto 1rem auto;">
+        <div id="admin-auth-guard" class="control-glass-card text-center p-8 hidden">
+          <div class="admin-auth-icon-badge mx-auto mb-4">
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
           </div>
           <h2 class="text-xl font-bold mb-2">Área Restrita - Autenticação Suprema Exigida</h2>
@@ -783,8 +783,8 @@
         <div class="upload-title">Anexar Avatar da sua Máquina</div>
         <div class="upload-desc">Clique para carregar qualquer foto do seu computador ou arraste aqui</div>
         <div class="upload-status" id="upload-status-text"></div>
-        <input type="file" id="machine-avatar-file" class="hidden-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" title="Anexar foto de avatar da máquina" aria-label="Anexar foto de avatar da máquina">
       </div>
+      <input type="file" id="machine-avatar-file" class="hidden-file-input" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" title="Anexar foto de avatar da máquina" aria-label="Anexar foto de avatar da máquina">
 
       <button id="profile-save-btn" class="cyber-btn-primary w-full mt-6">
         Salvar & Ingressar no Sistema
