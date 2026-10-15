@@ -59,10 +59,20 @@ window.CyberShield = (function() {
     }
   }
 
-  // Toast Notification System
+  // Toast Notification System com Deduplicação Inteligente
+  const activeToasts = new Map();
+
   function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
-    if (!container) return;
+    if (!container || !message) return;
+
+    // Previne repetição em cascata da mesma mensagem em menos de 2.5 segundos
+    const now = Date.now();
+    const lastSeen = activeToasts.get(message);
+    if (lastSeen && (now - lastSeen < 2500)) {
+      return;
+    }
+    activeToasts.set(message, now);
 
     const toast = document.createElement('div');
     toast.className = 'cyber-toast';
@@ -85,7 +95,10 @@ window.CyberShield = (function() {
       toast.style.opacity = '0';
       toast.style.transform = 'translateX(100%)';
       toast.style.transition = 'all 0.3s ease';
-      setTimeout(() => toast.remove(), 300);
+      setTimeout(() => {
+        toast.remove();
+        activeToasts.delete(message);
+      }, 300);
     }, 4000);
   }
 

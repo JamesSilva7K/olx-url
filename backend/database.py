@@ -136,6 +136,54 @@ def get_or_create_lead(vulgo: str, avatar: str, ip: str = "127.0.0.1", user_agen
     conn.close()
     return lead
 
+def update_lead_profile(old_vulgo: str, new_vulgo: str, avatar: str = "", ip: str = "127.0.0.1", user_agent: str = ""):
+    """Atualiza o perfil do lead (vulgo e/ou avatar) garantindo unicidade e preservando histórico."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    old_vulgo = (old_vulgo or "").strip()
+    new_vulgo = (new_vulgo or old_vulgo).strip()
+    now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+    row = None
+    if old_vulgo:
+        cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (old_vulgo,))
+        row = cursor.fetchone()
+
+    if not row and new_vulgo:
+        cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (new_vulgo,))
+        row = cursor.fetchone()
+
+    if row:
+        lead_id = row["id"]
+        # Se alterou o vulgo, valida se o novo vulgo já pertence a outro usuário
+        if new_vulgo.lower() != row["vulgo"].lower():
+            cursor.execute("SELECT id FROM leads WHERE vulgo = ? COLLATE NOCASE AND id != ?", (new_vulgo, lead_id))
+            if cursor.fetchone():
+                conn.close()
+                raise ValueError("Este vulgo já está em uso por outro operador.")
+
+        cursor.execute("""
+            UPDATE leads 
+            SET vulgo = ?,
+                avatar = CASE WHEN ? != '' THEN ? ELSE avatar END,
+                last_login = ?,
+                ip_address = ?,
+                user_agent = ?
+            WHERE id = ?
+        """, (new_vulgo, avatar, avatar, now_str, ip, user_agent, lead_id))
+
+        # Atualiza puxadas do vulgo antigo para o novo
+        cursor.execute("UPDATE puxadas SET vulgo = ? WHERE vulgo = ? COLLATE NOCASE", (new_vulgo, row["vulgo"]))
+        conn.commit()
+
+        cursor.execute("SELECT * FROM leads WHERE id = ?", (lead_id,))
+        updated = dict(cursor.fetchone())
+        conn.close()
+        return updated
+    else:
+        conn.close()
+        return get_or_create_lead(new_vulgo, avatar, ip, user_agent)
+
 def get_lead_by_vulgo(vulgo: str):
     conn = get_connection()
     cursor = conn.cursor()

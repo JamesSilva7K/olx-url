@@ -2825,12 +2825,14 @@ body {
 
 .cyber-3d-card {
   position: relative;
-  background: radial-gradient(circle at 10% 10%, rgba(30, 41, 59, 0.45) 0%, rgba(10, 15, 29, 0.95) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 1.5rem;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7),
-              0 0 0 1px rgba(255, 255, 255, 0.05);
+  background: rgba(13, 17, 28, 0.92) !important;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  border-radius: 18px;
+  padding: 1.4rem 1.6rem;
+  box-shadow: 0 14px 35px -8px rgba(0, 0, 0, 0.85),
+              0 0 0 1px rgba(255, 255, 255, 0.06);
   transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
               box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
               border-color 0.35s ease,
@@ -3001,10 +3003,17 @@ body {
 }
 
 .cyber-switch-input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  pointer-events: none !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  border: none !important;
+  outline: none !important;
 }
 
 .cyber-switch-track {
@@ -3245,6 +3254,300 @@ body {
   font-weight: 600;
   margin-left: 0.2rem;
 }
+
+/* ============================================================
+   BANNER DE DETECÇÃO INTELIGENTE DE CATEGORIA POR IA
+   ============================================================ */
+.ai-category-detector-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.15) 0%, rgba(99, 102, 241, 0.12) 50%, rgba(168, 85, 247, 0.15) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 12px;
+  padding: 0.65rem 1.1rem;
+  margin-top: 0.75rem;
+  box-shadow: 0 4px 20px -4px rgba(14, 165, 233, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  animation: slideDownFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: all 0.3s ease;
+}
+
+.ai-category-detector-bar.hidden {
+  display: none !important;
+}
+
+.ai-detector-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ai-sparkle-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #0ea5e9, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+  animation: pulseGlow 2.5s infinite;
+}
+
+.ai-detector-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ai-detector-cat-name {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.02em;
+}
+
+.ai-detector-keyword-matched {
+  font-size: 0.82rem;
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.ai-detector-undo-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #cbd5e1;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.ai-detector-undo-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #f87171;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   BARRA INTERATIVA DE PREÇO BASE DOS PRODUTOS
+   ============================================================ */
+.price-slider-panel {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  padding: 1.25rem 1.4rem;
+  margin-top: 1.25rem;
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+}
+
+.price-slider-panel:hover {
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.75), 0 0 20px rgba(56, 189, 248, 0.1);
+}
+
+.price-slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.1rem;
+}
+
+.price-slider-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.price-slider-icon-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(168, 85, 247, 0.2));
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+}
+
+.price-slider-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.02em;
+}
+
+.price-slider-badge {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  margin-left: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.price-slider-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.price-slider-label {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.price-slider-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #38bdf8;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+.price-slider-track-wrap {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+.cyber-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #0284c7 0%, #38bdf8 var(--slider-pct, 0%), rgba(255, 255, 255, 0.12) var(--slider-pct, 0%), rgba(255, 255, 255, 0.12) 100%);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cyber-range-slider:hover {
+  height: 9px;
+}
+
+.cyber-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #0284c7;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.cyber-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  box-shadow: 0 0 18px rgba(56, 189, 248, 1), 0 3px 8px rgba(0, 0, 0, 0.5);
+}
+
+.cyber-range-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #0284c7;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+
+.price-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.6rem;
+  padding: 0 4px;
+}
+
+.tick-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.tick-label:hover {
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.price-preset-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.price-preset-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.76rem;
+  font-weight: 700;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.price-preset-chip:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.price-preset-chip.active {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.3), rgba(2, 132, 199, 0.3));
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.7);
+  }
+}
+
 
 
 

@@ -910,19 +910,53 @@
     }
   }
 
+  // Helper resiliente de armazenamento local protegido contra QuotaExceededError
+  function safeSetLocalStorage(key, val) {
+    try {
+      localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
+      return true;
+    } catch (err) {
+      console.warn("Storage quota excedida ou restrita, aplicando fallback essencial:", err);
+      try {
+        if (typeof val === 'object' && val !== null) {
+          const minimal = {
+            id: val.id || Date.now(),
+            vulgo: val.vulgo || 'NG7K',
+            avatar: defaultAvatar,
+            role: val.role || 'lead',
+            status: val.status || 'active'
+          };
+          localStorage.setItem(key, JSON.stringify(minimal));
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    }
+  }
+
   // Modal de Criação / Edição de Perfil do Lead
   function openProfileModal(isInitial = false) {
     const modal = document.getElementById('profile-modal');
     if (!modal) return;
     modal.classList.add('active');
 
+    const titleEl = document.getElementById('profile-modal-title');
+    const saveBtn = document.getElementById('profile-save-btn');
     const vulgoInput = document.getElementById('profile-vulgo-input');
     const preview = document.getElementById('profile-avatar-preview');
     const statusText = document.getElementById('upload-status-text');
     if (statusText) statusText.classList.remove('active');
 
+    const isEditing = !isInitial && !!state.currentLead;
+    if (titleEl) {
+      titleEl.textContent = isEditing ? "Editar Perfil do Lead" : "Identificação do Lead";
+    }
+    if (saveBtn) {
+      saveBtn.textContent = isEditing ? "Salvar Alterações do Perfil" : "Salvar & Ingressar no Sistema";
+    }
+
     if (state.currentLead) {
-      if (vulgoInput) vulgoInput.value = state.currentLead.vulgo;
+      if (vulgoInput) vulgoInput.value = state.currentLead.vulgo || '';
       selectedAvatar = state.currentLead.avatar || defaultAvatar;
     } else {
       if (vulgoInput && !vulgoInput.value) vulgoInput.value = 'NG7K';
@@ -945,7 +979,7 @@
     if (modal) modal.classList.remove('active');
   }
 
-  // Processa arquivo de imagem da máquina (redimensiona em canvas para performance e confiabilidade)
+  // Processa arquivo de imagem da máquina (redimensiona em canvas e exporta JPEG leve para evitar estouro de cota)
   function processAvatarFile(file) {
     if (!file) return;
 
@@ -955,7 +989,7 @@
       return;
     }
 
-    // Limite de 8MB
+    // Limite de 8MB de entrada
     if (file.size > 8 * 1024 * 1024) {
       CyberShield.showToast("A imagem selecionada é muito grande. Escolha uma foto de até 8MB.", "error");
       return;
@@ -965,12 +999,12 @@
     reader.onload = function(evt) {
       const rawData = evt.target.result;
 
-      // Otimização inteligente via Canvas para imagens bitmap grandes (mantém qualidade perfeita com tamanho leve)
+      // Otimização inteligente via Canvas para imagem de perfil ultraleve e nítida
       if (file.type !== 'image/svg+xml') {
         const img = new Image();
         img.onload = function() {
           const canvas = document.createElement('canvas');
-          const maxDim = 256;
+          const maxDim = 200;
           let w = img.width;
           let h = img.height;
           if (w > maxDim || h > maxDim) {
@@ -986,7 +1020,8 @@
           canvas.height = h;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, w, h);
-          selectedAvatar = canvas.toDataURL('image/png');
+          // Exporta JPEG com qualidade 0.82 gerando ~15KB (super rápido e à prova de limite de localStorage)
+          selectedAvatar = canvas.toDataURL('image/jpeg', 0.82);
           applyUploadedAvatar(file.name);
         };
         img.onerror = function() {
@@ -1056,21 +1091,27 @@
       return;
     }
 
+    const previousVulgo = state.currentLead ? state.currentLead.vulgo : null;
+    const isEditing = !!previousVulgo;
+
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.innerHTML = `<span class="spinner" style="display:inline-block;width:16px;height:16px;border:2.5px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;"></span> Sincronizando Perfil...`;
+      saveBtn.innerHTML = `<span class="spinner" style="display:inline-block;width:16px;height:16px;border:2.5px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;"></span> Sincronizando...`;
     }
 
     const leadPayload = {
       vulgo: vulgo,
+      new_vulgo: vulgo,
+      old_vulgo: previousVulgo,
       avatar: selectedAvatar || defaultAvatar
     };
 
     try {
+      const endpoint = isEditing ? '/api/lead/update-profile' : '/api/auth/register-or-login';
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-      const res = await fetch('/api/auth/register-or-login', {
+      let res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(leadPayload),
@@ -1078,19 +1119,36 @@
       });
       clearTimeout(timeoutId);
 
+      // Fallback para endpoint principal caso o servidor tenha reiniciado ou update-profile retorne 404
+      if (!res.ok && isEditing && (res.status === 404 || res.status === 405)) {
+        res = await fetch('/api/auth/register-or-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(leadPayload)
+        });
+      }
+
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || "Erro ao salvar perfil no servidor.");
       }
 
       const data = await res.json();
-      state.currentLead = data.lead;
-      localStorage.setItem('olx_lead_profile', JSON.stringify(data.lead));
+      const savedLead = data.lead || {
+        id: state.currentLead ? state.currentLead.id : Date.now(),
+        vulgo: vulgo,
+        avatar: selectedAvatar || defaultAvatar,
+        role: 'lead',
+        status: 'active'
+      };
+
+      state.currentLead = savedLead;
+      safeSetLocalStorage('olx_lead_profile', savedLead);
 
       updateLeadHeaderDisplay();
       closeProfileModal();
       CyberShield.playSound('success');
-      CyberShield.showToast(`Perfil sincronizado com a blindagem! Bem-vindo, ${vulgo}.`, "success");
+      CyberShield.showToast(`Perfil sincronizado com sucesso! Olá, ${vulgo}.`, "success");
 
     } catch (e) {
       console.warn("Sincronizando perfil em modo de resiliência local imediata:", e);
@@ -1102,7 +1160,7 @@
         status: 'active'
       };
       state.currentLead = fallbackLead;
-      localStorage.setItem('olx_lead_profile', JSON.stringify(fallbackLead));
+      safeSetLocalStorage('olx_lead_profile', fallbackLead);
       updateLeadHeaderDisplay();
       closeProfileModal();
       CyberShield.playSound('success');
@@ -1110,9 +1168,355 @@
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.textContent = "Salvar & Ingressar no Sistema";
+        saveBtn.textContent = isEditing ? "Salvar Alterações do Perfil" : "Salvar & Ingressar no Sistema";
       }
     }
+  }
+
+  // ============================================================
+  // MOTOR DE INTELIGÊNCIA ARTIFICIAL: DETECÇÃO DINÂMICA DE CATEGORIA
+  // ============================================================
+  const SMART_CATEGORY_MAP = [
+    {
+      id: "casa",
+      name: "Para a sua Casa",
+      patterns: [
+        /\bgeladeir[as]?\b/i, /\brefrigerador(es)?\b/i, /\bfreezer(s)?\b/i, /\bfrigobar(es)?\b/i,
+        /\bfog[aã]o(es)?\b/i, /\bmicro[- ]?ondas\b/i, /\bcooktop(s)?\b/i, /\bforno(s)?\b/i,
+        /\bm[aá]quina de lavar\b/i, /\blava e seca\b/i, /\btanquinho(s)?\b/i, /\baspirador(es)?\b/i,
+        /\bsof[aá]s?\b/i, /\bpoltron[as]?\b/i, /\bcama(s)?\b/i, /\bcolch[aã]o(es)?\b/i,
+        /\bguarda[- ]roupa(s)?\b/i, /\bmesa(s)?\b/i, /\bcadeira(s)?\b/i, /\barm[aá]rio(s)?\b/i,
+        /\bestante(s)?\b/i, /\brack(s)?\b/i, /\btapete(s)?\b/i, /\bcortina(s)?\b/i,
+        /\bar[- ]condicionado\b/i, /\bventilador(es)?\b/i, /\bcafeteira(s)?\b/i, /\bliquidificador(es)?\b/i,
+        /\bbatedeira(s)?\b/i, /\bair[- ]?fryer\b/i, /\bfritadeira(s)?\b/i, /\beletrodom[eé]stico(s)?\b/i,
+        /\bm[oó]ve(l|is)\b/i, /\bber[cç]o(s)?\b/i, /\bpanela(s)?\b/i
+      ]
+    },
+    {
+      id: "celulares",
+      name: "Celulares e Telefonia",
+      patterns: [
+        /\biphone\b/i, /\bpro max\b/i, /\bgalaxy\b/i, /\bsamsung\b/i, /\bxiaomi\b/i,
+        /\bredmi\b/i, /\bpoco\b/i, /\bmotorola\b/i, /\bmoto [ge]\d+/i, /\bmoto edge\b/i,
+        /\bcelular(es)?\b/i, /\bsmartphone(s)?\b/i, /\btelefone(s)?\b/i, /\bapple watch\b/i,
+        /\bsmartwatch(es)?\b/i, /\bipad(s)?\b/i, /\btablet(s)?\b/i, /\bairpods\b/i
+      ]
+    },
+    {
+      id: "computadores",
+      name: "Computadores e Informática",
+      patterns: [
+        /\bnotebook(s)?\b/i, /\blaptop(s)?\b/i, /\bmacbook(s)?\b/i, /\bpc gamer\b/i,
+        /\bcomputador(es)?\b/i, /\bdesktop(s)?\b/i, /\bplaca de v[ií]deo\b/i, /\brtx\s?\d+/i,
+        /\bgtx\s?\d+/i, /\bradeon\b/i, /\bprocessador(es)?\b/i, /\bryzen\b/i, /\bintel core\b/i,
+        /\bi[3579][ -]\d+/i, /\bplaca m[aã]e\b/i, /\bmem[oó]ria ram\b/i, /\bssd\b/i, /\bnvme\b/i,
+        /\bmonitor(es)?\b/i, /\bteclado mec[aâ]nico\b/i, /\bmouse gamer\b/i, /\bfonte gamer\b/i,
+        /\bgabinete gamer\b/i, /\bimpressora(s)?\b/i, /\bnobreak(s)?\b/i
+      ]
+    },
+    {
+      id: "eletronicos",
+      name: "Eletrônicos, Áudio e Vídeo",
+      patterns: [
+        /\bsmart tv\b/i, /\btelevis[aã]o\b/i, /\btv\s?\d+/i, /\boled\b/i, /\bqled\b/i,
+        /\bcaixa de som\b/i, /\bjbl\b/i, /\bsoundbar\b/i, /\breceiver\b/i, /\bprojetor(es)?\b/i,
+        /\bc[aâ]mera(s)?\b/i, /\bdslr\b/i, /\bcanon\b/i, /\bnikon\b/i, /\bgopro\b/i,
+        /\bdrone(s)?\b/i, /\bplaystation\b/i, /\bps[345]\b/i, /\bxbox\b/i, /\bnintendo switch\b/i,
+        /\bconsole(s)?\b/i, /\bvideogame(s)?\b/i, /\bfone(s)? de ouvido\b/i, /\bheadphone(s)?\b/i
+      ]
+    },
+    {
+      id: "carros",
+      name: "Carros, Vans e Utilitários",
+      patterns: [
+        /\bcarro(s)?\b/i, /\bautom[oó]ve(l|is)\b/i, /\bve[ií]culo(s)?\b/i, /\bgol\b/i,
+        /\bcorsa\b/i, /\bpalio\b/i, /\buno\b/i, /\bcivic\b/i, /\bcorolla\b/i, /\bonix\b/i,
+        /\bhb20\b/i, /\bfit\b/i, /\bfiesta\b/i, /\bka\b/i, /\bsandero\b/i, /\brenegade\b/i,
+        /\bcompass\b/i, /\bt[- ]cross\b/i, /\btracker\b/i, /\bcreta\b/i, /\bhilux\b/i,
+        /\branger\b/i, /\bs10\b/i, /\bamarok\b/i, /\bstrada\b/i, /\bsaveiro\b/i,
+        /\bfiorino\b/i, /\bvan(s)?\b/i, /\bkombi\b/i, /\bsedan\b/i, /\bhatch\b/i, /\bsuv\b/i
+      ]
+    },
+    {
+      id: "motos",
+      name: "Motos",
+      patterns: [
+        /\bmoto(s)?\b/i, /\bmotocicleta(s)?\b/i, /\bscooter(s)?\b/i, /\bbiz\b/i,
+        /\bhonda cg\b/i, /\btitan\b/i, /\bfan\b/i, /\btwister\b/i, /\bcb\s?300\b/i,
+        /\bcb\s?500\b/i, /\bcb\s?600\b/i, /\bhornet\b/i, /\bxj6\b/i, /\byamaha\b/i,
+        /\bfactor\b/i, /\bfazer\b/i, /\blander\b/i, /\btenere\b/i, /\bmt[- ]?0[379]\b/i,
+        /\bpcx\b/i, /\bnmax\b/i, /\bxre\b/i, /\bbros\b/i, /\bfalcon\b/i, /\bbmw gs\b/i,
+        /\btriumph\b/i, /\bharley\b/i, /\bcapacete(s)?\b/i
+      ]
+    },
+    {
+      id: "autos-e-pecas",
+      name: "Autos e Peças",
+      patterns: [
+        /\bpe[cç]as? de carro\b/i, /\bauto pe[cç]as?\b/i, /\bpneu(s)?\b/i, /\broda(s)?\b/i,
+        /\baro\s?\d{2}\b/i, /\bbateria heliar\b/i, /\bbateria moura\b/i, /\bmotor ap\b/i,
+        /\bc[aâ]mbio\b/i, /\bamortecedor(es)?\b/i, /\bfaro(l|is)\b/i, /\bescapamento(s)?\b/i,
+        /\bpara[- ]choque(s)?\b/i, /\bsom automotivo\b/i
+      ]
+    },
+    {
+      id: "imoveis",
+      name: "Imóveis",
+      patterns: [
+        /\bapartamento(s)?\b/i, /\bapto(s)?\b/i, /\bcasa para alugar\b/i, /\bcasa para venda\b/i,
+        /\bkitnet(s)?\b/i, /\bkitinete(s)?\b/i, /\bquitinete(s)?\b/i, /\bstudio\b/i, /\bflat\b/i,
+        /\bloft\b/i, /\bcobertura\b/i, /\bsobrado\b/i, /\bterreno(s)?\b/i, /\blote(s)?\b/i,
+        /\bcondom[ií]nio\b/i, /\bch[aá]cara(s)?\b/i, /\bs[ií]tio(s)?\b/i, /\bfazenda(s)?\b/i,
+        /\bgalp[aã]o(es)?\b/i, /\bsala comercial\b/i, /\baluguel\b/i
+      ]
+    },
+    {
+      id: "moda",
+      name: "Moda e Beleza",
+      patterns: [
+        /\bt[eê]nis\b/i, /\bsapato(s)?\b/i, /\bbota(s)?\b/i, /\bsand[aá]lia(s)?\b/i,
+        /\brasteirinhas?\b/i, /\bcamisa(s)?\b/i, /\bcamiseta(s)?\b/i, /\bcal[cç]a(s)?\b/i,
+        /\bvestido(s)?\b/i, /\bsaia(s)?\b/i, /\bcasaco(s)?\b/i, /\bjaqueta(s)?\b/i,
+        /\bmoletom\b/i, /\bterno(s)?\b/i, /\brel[oó]gio(s)?\b/i, /\binvicta\b/i, /\brolex\b/i,
+        /\bbolsa(s)?\b/i, /\bmochila(s)?\b/i, /\bperfume(s)?\b/i, /\bmaquiagem\b/i,
+        /\bsecador(es)?\b/i, /\bchapinha(s)?\b/i
+      ]
+    },
+    {
+      id: "musica",
+      name: "Música e Hobbies",
+      patterns: [
+        /\bviol[aã]o(es)?\b/i, /\bguitarra(s)?\b/i, /\bbaixo(s)?\b/i, /\bbateria ac[uú]stica\b/i,
+        /\bteclado musical\b/i, /\bpiano(s)?\b/i, /\bsaxofone(s)?\b/i, /\bflauta(s)?\b/i,
+        /\bmicrofone(s)?\b/i, /\bamplificador(es)?\b/i, /\bpedaleira(s)?\b/i, /\bcolecion[aá]ve(l|is)\b/i,
+        /\baction figure(s)?\b/i, /\bvinil\b/i, /\bdisco(s)?\b/i
+      ]
+    },
+    {
+      id: "esportes",
+      name: "Esportes e Lazer",
+      patterns: [
+        /\bbicicleta(s)?\b/i, /\bbike(s)?\b/i, /\bmtb\b/i, /\bspeed\b/i, /\bcaloi\b/i,
+        /\baro 29\b/i, /\besteira(s)?\b/i, /\bspinning\b/i, /\bhalteres?\b/i, /\banilha(s)?\b/i,
+        /\bprancha de surf\b/i, /\bskate(s)?\b/i, /\bpatins\b/i, /\bbarraca de camping\b/i,
+        /\bvara de pescar\b/i, /\bmolinete(s)?\b/i, /\bsuplemento(s)?\b/i, /\bwhey\b/i
+      ]
+    },
+    {
+      id: "agro",
+      name: "Agro e Indústria",
+      patterns: [
+        /\btrator(es)?\b/i, /\barado(s)?\b/i, /\bcolheitadeira(s)?\b/i, /\bgado\b/i,
+        /\bcavalo(s)?\b/i, /\bboi(s)?\b/i, /\bvaca(s)?\b/i, /\bbezerro(s)?\b/i,
+        /\bsilagem\b/i, /\bra[cç][aã]o\b/i, /\badubo\b/i, /\bm[aá]quina industrial\b/i,
+        /\btorno(s)?\b/i, /\bcompressor(es)?\b/i, /\bsolda\b/i, /\bgerador(es)?\b/i
+      ]
+    },
+    {
+      id: "servicos",
+      name: "Serviços",
+      patterns: [
+        /\bfrete(s)?\b/i, /\bcarreto(s)?\b/i, /\bmudan[cç]a(s)?\b/i, /\bpedreiro(s)?\b/i,
+        /\bpintor(es)?\b/i, /\beletricista(s)?\b/i, /\bencanador(es)?\b/i, /\bmec[aâ]nico(s)?\b/i,
+        /\bdiarista(s)?\b/i, /\bfaxineira(s)?\b/i, /\bformata[cç][aã]o\b/i, /\bmarcenaria\b/i,
+        /\bserralheria\b/i, /\bguincho(s)?\b/i
+      ]
+    }
+  ];
+
+  function detectCategoryFromQuery(query) {
+    if (!query || typeof query !== 'string') return null;
+    const cleanQuery = query.trim();
+    if (cleanQuery.length < 3) return null;
+
+    for (const cat of SMART_CATEGORY_MAP) {
+      for (const pat of cat.patterns) {
+        const match = cleanQuery.match(pat);
+        if (match) {
+          return {
+            id: cat.id,
+            name: cat.name,
+            keyword: match[0]
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  function setupSmartCategoryDetector() {
+    const searchInput = document.getElementById('search-keyword');
+    const detectorBar = document.getElementById('ai-category-detector-bar');
+    const catNameEl = document.getElementById('ai-detector-cat-name');
+    const keywordEl = document.getElementById('ai-detector-keyword-matched');
+    const undoBtn = document.getElementById('ai-detector-undo-btn');
+    const categorySelect = document.getElementById('search-category-select');
+
+    if (!searchInput || !detectorBar) return;
+
+    let autoDetected = false;
+
+    searchInput.addEventListener('input', () => {
+      const query = searchInput.value;
+      const detected = detectCategoryFromQuery(query);
+
+      if (detected) {
+        if (state.selectedCategory !== detected.id) {
+          state.selectedCategory = detected.id;
+          autoDetected = true;
+
+          // Atualiza select nativo
+          if (categorySelect) categorySelect.value = detected.id;
+
+          // Atualiza custom dropdown se inicializado
+          if (state.dropdowns && state.dropdowns.category) {
+            state.dropdowns.category.setValue(detected.id);
+          }
+
+          // Exibe banner inteligente
+          if (catNameEl) catNameEl.textContent = detected.name;
+          if (keywordEl) keywordEl.textContent = `(${detected.keyword})`;
+          detectorBar.classList.remove('hidden');
+
+          CyberShield.playSound('click');
+        }
+      } else {
+        // Se o usuário apagou o texto da busca, esconde o banner
+        if (!query.trim() && autoDetected) {
+          detectorBar.classList.add('hidden');
+          autoDetected = false;
+        }
+      }
+    });
+
+    // Botão de desfazer detecção automática
+    if (undoBtn) {
+      undoBtn.addEventListener('click', () => {
+        state.selectedCategory = 'todas';
+        if (categorySelect) categorySelect.value = 'todas';
+        if (state.dropdowns && state.dropdowns.category) {
+          state.dropdowns.category.setValue('todas');
+        }
+        detectorBar.classList.add('hidden');
+        autoDetected = false;
+        CyberShield.playSound('click');
+        CyberShield.showToast("Categoria revertida para Todas.", "info");
+      });
+    }
+  }
+
+  // ============================================================
+  // BARRA INTERATIVA DE PREÇO BASE DOS PRODUTOS
+  // ============================================================
+  function setupPriceBaseSlider() {
+    const slider = document.getElementById('price-base-slider');
+    const display = document.getElementById('price-slider-display');
+    const badge = document.getElementById('price-slider-tier-badge');
+    const maxInput = document.getElementById('search-max-price');
+    const chips = document.querySelectorAll('.price-preset-chip');
+    const ticks = document.querySelectorAll('.tick-label');
+
+    if (!slider) return;
+
+    function formatCurrency(val) {
+      if (!val || val === 0) return "Qualquer Valor";
+      return `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    }
+
+    function updateSliderVisuals(val) {
+      const pct = Math.min(100, Math.max(0, (val / 50000) * 100));
+      slider.style.setProperty('--slider-pct', `${pct}%`);
+      if (display) display.textContent = formatCurrency(val);
+
+      if (badge) {
+        if (val === 0) {
+          badge.textContent = "FAIXA LIVRE";
+          badge.style.color = "#38bdf8";
+          badge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+          badge.style.background = "rgba(56, 189, 248, 0.15)";
+        } else if (val <= 1000) {
+          badge.textContent = "ENTRADA";
+          badge.style.color = "#34d399";
+          badge.style.borderColor = "rgba(52, 211, 153, 0.4)";
+          badge.style.background = "rgba(52, 211, 153, 0.15)";
+        } else if (val <= 5000) {
+          badge.textContent = "INTERMEDIÁRIO";
+          badge.style.color = "#38bdf8";
+          badge.style.borderColor = "rgba(56, 189, 248, 0.4)";
+          badge.style.background = "rgba(56, 189, 248, 0.15)";
+        } else if (val <= 15000) {
+          badge.textContent = "PREMIUM";
+          badge.style.color = "#c084fc";
+          badge.style.borderColor = "rgba(192, 132, 252, 0.4)";
+          badge.style.background = "rgba(192, 132, 252, 0.15)";
+        } else {
+          badge.textContent = "ALTO PADRÃO";
+          badge.style.color = "#fbbf24";
+          badge.style.borderColor = "rgba(251, 191, 36, 0.4)";
+          badge.style.background = "rgba(251, 191, 36, 0.15)";
+        }
+      }
+
+      // Atualiza active nos chips
+      chips.forEach(chip => {
+        const chipVal = parseFloat(chip.getAttribute('data-price')) || 0;
+        if (chipVal === val) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    // Evento de arrasto da barra
+    slider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value) || 0;
+      updateSliderVisuals(val);
+      if (maxInput) {
+        maxInput.value = val > 0 ? val : '';
+      }
+    });
+
+    // Sincroniza quando o usuário digita no input numérico de preço máximo
+    if (maxInput) {
+      maxInput.addEventListener('input', () => {
+        const val = parseFloat(maxInput.value) || 0;
+        const clamped = Math.min(50000, Math.max(0, val));
+        slider.value = clamped;
+        updateSliderVisuals(clamped);
+      });
+    }
+
+    // Chips de preço rápido
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const val = parseFloat(chip.getAttribute('data-price')) || 0;
+        slider.value = val;
+        updateSliderVisuals(val);
+        if (maxInput) {
+          maxInput.value = val > 0 ? val : '';
+        }
+        CyberShield.playSound('click');
+      });
+    });
+
+    // Ticks clicáveis abaixo da barra
+    ticks.forEach(tick => {
+      tick.addEventListener('click', () => {
+        const val = parseFloat(tick.getAttribute('data-val')) || 0;
+        slider.value = val;
+        updateSliderVisuals(val);
+        if (maxInput) {
+          maxInput.value = val > 0 ? val : '';
+        }
+        CyberShield.playSound('click');
+      });
+    });
+
+    // Inicialização da barra
+    const initialMax = maxInput ? (parseFloat(maxInput.value) || 0) : 0;
+    slider.value = initialMax;
+    updateSliderVisuals(initialMax);
   }
 
   // Disponibiliza saveLeadProfile e funções de perfil no escopo global para acionamento resiliente
@@ -1653,7 +2057,10 @@
 
     const saveProfileBtn = document.getElementById('profile-save-btn');
     if (saveProfileBtn) {
-      saveProfileBtn.addEventListener('click', saveLeadProfile);
+      saveProfileBtn.onclick = (e) => {
+        if (e) e.preventDefault();
+        saveLeadProfile();
+      };
     }
 
     const vulgoInput = document.getElementById('profile-vulgo-input');
@@ -1971,6 +2378,10 @@
         }
       });
     }
+
+    // Inicializa Motores Inteligentes (Detecção Cognitiva de Categoria & Barra de Preço Base)
+    setupSmartCategoryDetector();
+    setupPriceBaseSlider();
   }
 
   // Executa inicialização assim que o DOM carregar

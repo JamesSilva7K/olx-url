@@ -9,7 +9,7 @@ from typing import Optional
 
 from .config import BRAZILIAN_STATES, CATEGORIES, ADMIN_SECRET_KEY
 from .database import (
-    init_db, get_or_create_lead, get_lead_by_vulgo, list_leads,
+    init_db, get_or_create_lead, update_lead_profile, get_lead_by_vulgo, list_leads,
     toggle_lead_block, delete_lead, is_lead_blocked, log_puxada,
     list_puxadas, get_filter_stats, is_ip_blocked, block_ip, unblock_ip,
     list_blocked_ips, get_admin_metrics, log_system_event,
@@ -79,7 +79,13 @@ if os.path.exists(STATIC_DIR):
 # Schemas de Entrada
 class AuthPayload(BaseModel):
     vulgo: str
-    avatar: str
+    avatar: Optional[str] = ""
+    old_vulgo: Optional[str] = None
+
+class UpdateProfilePayload(BaseModel):
+    new_vulgo: str
+    avatar: Optional[str] = ""
+    old_vulgo: Optional[str] = None
 
 class SearchPayload(BaseModel):
     keyword: Optional[str] = ""
@@ -243,21 +249,74 @@ async def register_or_login(payload: Optional[AuthPayload] = None, request: Requ
         log_system_event("BLOCKED_LEAD_LOGIN_ATTEMPT", f"Tentativa de login por lead bloqueado: {clean_vulgo}", client_ip)
         raise HTTPException(status_code=403, detail="Seu acesso está BLOQUEADO pelo Admin Supremo.")
 
-    # Validação do Avatar (aceita data:image/svg, data:image/png, base64 ou url http)
+    # Validação do Avatar (aceita data:image/svg, data:image/png, data:image/jpeg, base64 ou url http)
     avatar = payload.avatar.strip() if payload.avatar else ""
     if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")):
         avatar = ""
 
-    # Persistência permanente garantida (nunca apaga os dados a não ser por ordem direta do Admin Supremo)
-    lead = get_or_create_lead(clean_vulgo, avatar, client_ip, user_agent)
-    token = generate_session_token(clean_vulgo, role="lead")
+    old_v = (payload.old_vulgo or "").strip()
+    if old_v and old_v.lower() != clean_vulgo.lower():
+        try:
+            lead = update_lead_profile(old_v, clean_vulgo, avatar, client_ip, user_agent)
+        except ValueError as ve:
+            raise HTTPException(status_code=400, detail=str(ve))
+    else:
+        lead = get_or_create_lead(clean_vulgo, avatar, client_ip, user_agent)
 
-    log_system_event("LEAD_AUTHENTICATED", f"Lead validado e autenticado com sucesso: {clean_vulgo}", client_ip)
+    token = generate_session_token(clean_vulgo, role="lead")
+    log_system_event("LEAD_AUTHENTICATED", f"Lead autenticado / atualizado com sucesso: {clean_vulgo}", client_ip)
     return {
         "success": True,
         "lead": lead,
         "token": token
     }
+
+# Edição Avançada do Perfil do Lead (Atualização de Vulgo e Avatar)
+@app.api_route("/api/lead/update-profile", methods=["POST", "PUT", "OPTIONS"])
+@app.api_route("/api/lead/update-profile/", methods=["POST", "PUT", "OPTIONS"])
+async def handle_update_profile(request: Request, payload: Optional[UpdateProfilePayload] = None, x_lead_vulgo: Optional[str] = Header(None)):
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+    if payload is None:
+        try:
+            body = await request.json()
+            payload = UpdateProfilePayload(**body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Dados de perfil inválidos.")
+
+    new_v = payload.new_vulgo.strip()
+    if not new_v or len(new_v) < 2 or len(new_v) > 30:
+        raise HTTPException(status_code=400, detail="Vulgo deve ter entre 2 e 30 caracteres.")
+
+    clean_new_v = re.sub(r"[<>/\\{}\[\];`\"'=]", "", new_v).strip()
+    if not clean_new_v or len(clean_new_v) < 2:
+        raise HTTPException(status_code=400, detail="Vulgo contém caracteres proibidos.")
+
+    reserved_names = ["admin", "supremo", "root", "system", "moderador", "bot", "anonymous"]
+    if clean_new_v.lower() in reserved_names:
+        raise HTTPException(status_code=400, detail="Este vulgo é reservado pelo sistema.")
+
+    old_v = (payload.old_vulgo or x_lead_vulgo or "").strip()
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    user_agent = request.headers.get("User-Agent", "")
+
+    avatar = payload.avatar.strip() if payload.avatar else ""
+    if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")):
+        avatar = ""
+
+    try:
+        updated_lead = update_lead_profile(old_v, clean_new_v, avatar, client_ip, user_agent)
+        token = generate_session_token(clean_new_v, role="lead")
+        log_system_event("LEAD_PROFILE_UPDATED", f"Perfil do lead atualizado: {old_v} -> {clean_new_v}", client_ip)
+        return {
+            "success": True,
+            "lead": updated_lead,
+            "token": token
+        }
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao salvar perfil: {str(e)}")
 
 # Dados do Lead Atual
 @app.get("/api/auth/me")
@@ -565,8 +624,12 @@ async def admin_toggle_token(token_id: int, auth: bool = Depends(verify_admin_au
     return {"success": True}
 
 # Catch-all para SPA (Single Page Application) - Qualquer rota desconhecida entrega o index.html
-@app.get("/{full_path:path}", response_class=HTMLResponse)
-async def catch_all_spa(full_path: str):
+@app.api_route("/{full_path:path}", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"])
+async def catch_all_spa(request: Request, full_path: str):
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+    if full_path.startswith("api/"):
+        return JSONResponse(status_code=404, content={"error": "NOT_FOUND", "detail": f"Rota de API não encontrada: /{full_path}"})
     if full_path.startswith("static/"):
         return await serve_static_fallback(full_path[len("static/"):])
     return await serve_index()

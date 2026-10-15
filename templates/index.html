@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Estilos Personalizados Monochrome -->
-  <link rel="stylesheet" href="/static/css/style.css">
-  <link rel="stylesheet" href="/static/css/animations.css">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.2">
+  <link rel="stylesheet" href="/static/css/animations.css?v=2.2">
 </head>
 <body>
 
@@ -108,6 +108,23 @@
               Puxar Anúncios Reais
             </button>
           </div>
+          
+          <!-- BANNER DE DETECÇÃO INTELIGENTE DE CATEGORIA POR IA -->
+          <div class="ai-category-detector-bar hidden" id="ai-category-detector-bar">
+            <div class="ai-detector-left">
+              <div class="ai-sparkle-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"></path>
+                </svg>
+              </div>
+              <span class="ai-detector-label">IA Cognitiva Detectou:</span>
+              <span class="ai-detector-cat-name" id="ai-detector-cat-name">Para a sua Casa</span>
+              <span class="ai-detector-keyword-matched" id="ai-detector-keyword-matched">(Geladeiras)</span>
+            </div>
+            <button type="button" class="ai-detector-undo-btn" id="ai-detector-undo-btn" title="Desfazer e voltar para Todas as Categorias">
+              ✕ Desfazer
+            </button>
+          </div>
 
           <!-- Filtros de Estado, Categoria, Faixas de Preço e Ordenação -->
           <div class="filters-grid">
@@ -166,6 +183,54 @@
                   <option value="expensive">Maior Preço</option>
                 </select>
               </div>
+            </div>
+          </div>
+
+          <!-- BARRA INTERATIVA PARA ESCOLHER PREÇO BASE DOS PRODUTOS -->
+          <div class="price-slider-panel mt-4" id="price-slider-panel">
+            <div class="price-slider-header">
+              <div class="price-slider-title-group">
+                <div class="price-slider-icon-badge">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <line x1="12" y1="1" x2="12" y2="23"></line>
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                  </svg>
+                </div>
+                <div>
+                  <span class="price-slider-title">Barra de Preço Base</span>
+                  <span class="price-slider-badge" id="price-slider-tier-badge">FAIXA LIVRE</span>
+                </div>
+              </div>
+              <div class="price-slider-readout">
+                <span class="price-slider-label">Preço Base Teto:</span>
+                <span class="price-slider-val" id="price-slider-display">Qualquer Valor</span>
+              </div>
+            </div>
+
+            <div class="price-slider-track-wrap">
+              <input type="range" id="price-base-slider" class="cyber-range-slider" min="0" max="50000" step="50" value="0" aria-label="Barra para escolher o preço base dos produtos">
+              <div class="price-slider-ticks">
+                <span class="tick-label" data-val="0">R$ 0</span>
+                <span class="tick-label" data-val="500">R$ 500</span>
+                <span class="tick-label" data-val="1500">R$ 1.500</span>
+                <span class="tick-label" data-val="3000">R$ 3.000</span>
+                <span class="tick-label" data-val="5000">R$ 5.000</span>
+                <span class="tick-label" data-val="10000">R$ 10.000</span>
+                <span class="tick-label" data-val="25000">R$ 25k</span>
+                <span class="tick-label" data-val="50000">R$ 50k+</span>
+              </div>
+            </div>
+
+            <!-- Chips de Preço Rápido -->
+            <div class="price-preset-chips" id="price-preset-chips">
+              <button type="button" class="price-preset-chip active" data-price="0">Qualquer Preço</button>
+              <button type="button" class="price-preset-chip" data-price="500">Até R$ 500</button>
+              <button type="button" class="price-preset-chip" data-price="1000">Até R$ 1.000</button>
+              <button type="button" class="price-preset-chip" data-price="2500">Até R$ 2.500</button>
+              <button type="button" class="price-preset-chip" data-price="5000">Até R$ 5.000</button>
+              <button type="button" class="price-preset-chip" data-price="10000">Até R$ 10.000</button>
+              <button type="button" class="price-preset-chip" data-price="25000">Até R$ 25.000</button>
+              <button type="button" class="price-preset-chip" data-price="50000">Até R$ 50.000</button>
             </div>
           </div>
 
@@ -765,8 +830,8 @@
   <div class="cyber-modal-overlay" id="profile-modal">
     <div class="cyber-modal-content">
       <div class="modal-header">
-        <h3 class="modal-title">Identificação do Lead</h3>
-        <button class="modal-close-btn" id="profile-modal-close" title="Fechar">✕</button>
+        <h3 class="modal-title" id="profile-modal-title">Identificação do Lead</h3>
+        <button class="modal-close-btn" id="profile-modal-close" onclick="window.closeProfileModal ? window.closeProfileModal() : null" title="Fechar">✕</button>
       </div>
 
       <div class="modal-center-preview">
@@ -841,11 +906,11 @@
   <div id="toast-container"></div>
 
   <!-- Scripts do Sistema -->
-  <script src="/static/js/avatars.js"></script>
-  <script src="/static/js/shield.js"></script>
-  <script src="/static/js/dropdown.js"></script>
-  <script src="/static/js/three-bg.js"></script>
-  <script src="/static/js/scanner3d.js"></script>
-  <script src="/static/js/app.js"></script>
+  <script src="/static/js/avatars.js?v=2.2"></script>
+  <script src="/static/js/shield.js?v=2.2"></script>
+  <script src="/static/js/dropdown.js?v=2.2"></script>
+  <script src="/static/js/three-bg.js?v=2.2"></script>
+  <script src="/static/js/scanner3d.js?v=2.2"></script>
+  <script src="/static/js/app.js?v=2.2"></script>
 </body>
 </html>
