@@ -351,6 +351,9 @@
       // Atualiza Gráfico de Preços
       renderPriceChart(data.stats.distribution);
 
+      // Exibe Diagnóstico Inteligente de Auditoria
+      renderSearchDiagnostic(data.diagnosis, data.total_found);
+
       // Exibe e atualiza a Barra de Controle & Filtros Rápidos
       setupQuickControlBar(state.rawAds);
 
@@ -430,6 +433,57 @@
         }
       }
     });
+  }
+
+  // Renderiza Banner de Diagnóstico Inteligente da Varredura
+  function renderSearchDiagnostic(diag, totalFound) {
+    const banner = document.getElementById('search-diagnostic-banner');
+    const iconEl = document.getElementById('diag-banner-icon');
+    const titleEl = document.getElementById('diag-banner-title');
+    const textEl = document.getElementById('diag-banner-text');
+    const badgesEl = document.getElementById('diag-banner-badges');
+
+    if (!banner || !diag) return;
+
+    banner.classList.remove('hidden', 'diag-success', 'diag-warning', 'diag-empty');
+
+    const status = diag.status || 'ok';
+    let iconSvg = '';
+    let title = 'Auditoria do Motor de Varredura';
+    let desc = diag.message || 'Busca executada com sucesso.';
+    let badgesHtml = '';
+
+    if (status === 'strict_filter_depleted') {
+      banner.classList.add('diag-warning');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+      title = 'Filtros Estritos Aplicados (Nenhum Anúncio Atendeu 100% aos Critérios)';
+      desc = `A OLX retornou <strong>${diag.scanned_raw_count} anúncios</strong> na consulta, mas nenhum se enquadrou simultaneamente na sua régua de Preço, WhatsApp obrigatório ou Vendedor Novo. Dica: flexibilize a faixa de preço ou desligue temporariamente um dos filtros para ver todos os itens disponíveis.`;
+    } else if (status === 'olx_no_results') {
+      banner.classList.add('diag-empty');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
+      title = 'Zero Anúncios Existentes na OLX Brasil';
+      desc = 'Não há nenhum anúncio publicado na OLX para essa combinação de termo, categoria ou estado. O sistema varreu as páginas sem erros, porém o inventário é inexistente no momento.';
+    } else if (status === 'partial_strict_filter') {
+      banner.classList.add('diag-warning');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+      title = 'Filtros de Alta Precisão (Resultados Selecionados a Dedo)';
+      desc = `De <strong>${diag.scanned_raw_count} anúncios</strong> escaneados na OLX, apenas <strong>${diag.filtered_count}</strong> atenderam rigorosamente às suas especificações de preço, contato e vendedor.`;
+    } else {
+      banner.classList.add('diag-success');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+      title = 'Puxada Real Concluída com Sucesso';
+      desc = `Foram encontrados e validados <strong>${totalFound} anúncios reais</strong> na OLX de acordo com seus parâmetros.`;
+    }
+
+    // Badges de auditoria
+    badgesHtml += `<span class="diag-badge">Páginas: ${diag.scanned_pages || 1}/${diag.requested_pages || 1}</span>`;
+    badgesHtml += `<span class="diag-badge">Escaneados: ${diag.scanned_raw_count || totalFound}</span>`;
+    badgesHtml += `<span class="diag-badge">Aprovados: ${totalFound}</span>`;
+
+    if (iconEl) iconEl.innerHTML = iconSvg;
+    if (titleEl) titleEl.innerHTML = title;
+    if (textEl) textEl.innerHTML = desc;
+    if (badgesEl) badgesEl.innerHTML = badgesHtml;
   }
 
   // Configura a Barra de Controle & Filtros Rápidos

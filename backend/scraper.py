@@ -733,15 +733,34 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
         except Exception:
             pass
 
-    # Ordenação estrita no backend: mais recentes primeiro se solicitado
-    if sort_by == "recent":
-        all_ads.sort(key=lambda x: x.get("date_timestamp", 0.0), reverse=True)
-    elif sort_by == "cheapest":
-        all_ads.sort(key=lambda x: x.get("price", float('inf')))
-    elif sort_by == "expensive":
-        all_ads.sort(key=lambda x: x.get("price", 0.0), reverse=True)
+    # Diagnóstico Inteligente de Auditoria para o Lead
+    diag = {
+        "requested_pages": int(pages or 1),
+        "scanned_pages": clamped_pages,
+        "scanned_raw_count": len(seen_ids),
+        "filtered_count": len(all_ads),
+        "min_price_applied": min_price,
+        "max_price_applied": max_price,
+        "fetch_full_descriptions": bool(fetch_full_descriptions),
+        "only_new_sellers": bool(only_new_sellers),
+        "message": ""
+    }
 
-    return all_ads, stats
+    if len(all_ads) == 0:
+        if len(seen_ids) == 0:
+            diag["status"] = "olx_no_results"
+            diag["message"] = "Nenhum anúncio existe na OLX Brasil para os termos e localização solicitados."
+        else:
+            diag["status"] = "strict_filter_depleted"
+            diag["message"] = f"A OLX retornou {len(seen_ids)} anúncios, mas nenhum passou na régua estrita de filtros (Preço, WhatsApp ou Vendedor Novo)."
+    elif len(all_ads) < 10 and len(seen_ids) > len(all_ads):
+        diag["status"] = "partial_strict_filter"
+        diag["message"] = f"Exibindo {len(all_ads)} anúncio(s) que atenderam 100% aos seus filtros entre {len(seen_ids)} verificados na OLX."
+    else:
+        diag["status"] = "ok"
+        diag["message"] = f"Puxada concluída com sucesso: {len(all_ads)} anúncio(s) dentro dos parâmetros exatos."
+
+    return all_ads, stats, diag
 
 def calculate_price_stats(prices: list):
     """Calcula média, mediana, menor, maior e distribuição de preços."""

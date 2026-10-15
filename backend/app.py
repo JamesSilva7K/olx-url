@@ -387,8 +387,9 @@ async def search_olx(request: Request, payload: Optional[SearchPayload] = None, 
     )
 
     try:
+        diag = None
         if (payload.pages and payload.pages > 1) or payload.fetch_full_descriptions or payload.only_new_sellers:
-            ads, stats = search_olx_advanced(
+            ads, stats, diag = search_olx_advanced(
                 keyword=payload.keyword or "",
                 state_uf=payload.state_uf or "BR",
                 category_id=payload.category_id or "todas",
@@ -408,6 +409,14 @@ async def search_olx(request: Request, payload: Optional[SearchPayload] = None, 
                 min_price=payload.min_price,
                 max_price=payload.max_price
             )
+            diag = {
+                "requested_pages": 1,
+                "scanned_pages": 1,
+                "scanned_raw_count": len(ads),
+                "filtered_count": len(ads),
+                "status": "ok" if len(ads) > 0 else "olx_no_results",
+                "message": f"Puxada de 1 página concluída: {len(ads)} anúncios encontrados." if len(ads) > 0 else "Nenhum anúncio encontrado para essa busca na OLX."
+            }
 
         # Registra a puxada no histórico para auditoria do Admin Supremo
         lead_id = lead["id"] if lead else None
@@ -433,6 +442,7 @@ async def search_olx(request: Request, payload: Optional[SearchPayload] = None, 
             "target_url": target_url,
             "total_found": len(ads),
             "stats": stats,
+            "diagnosis": diag,
             "ads": ads
         }
 
