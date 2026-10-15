@@ -3548,6 +3548,96 @@ body {
   }
 }
 
+/* ==========================================================================
+   OTIMIZAÇÃO SUPREMA MOBILE: ANDROID & IPHONE (TOUCH, SAFE-AREAS, CARDS)
+   ========================================================================== */
+@media (max-width: 768px) {
+  html, body {
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+
+  .main-wrapper {
+    padding: 0.75rem 0.5rem 2rem 0.5rem !important;
+  }
+
+  .glass-card {
+    padding: 1rem 0.85rem !important;
+    border-radius: 14px !important;
+  }
+
+  /* Barra de Busca e Filtros com Touch Otimizado */
+  .search-bar-row {
+    flex-direction: column !important;
+    gap: 0.65rem !important;
+  }
+
+  .search-input-wrapper {
+    width: 100% !important;
+  }
+
+  .cyber-btn-primary, .cyber-btn-secondary, .filter-btn-toggle {
+    min-height: 44px !important; /* Touch target padrão Apple iOS / Android */
+    padding: 0.65rem 1rem !important;
+    font-size: 0.9rem !important;
+  }
+
+  /* Filtros em Grid Compacto para telas pequenas */
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+
+  /* Preço Base Slider Mobile */
+  .price-slider-panel {
+    padding: 0.85rem !important;
+  }
+
+  .price-slider-presets {
+    gap: 0.35rem !important;
+    overflow-x: auto;
+    padding-bottom: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .price-preset-chip {
+    font-size: 0.75rem !important;
+    padding: 0.35rem 0.65rem !important;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Cards de Anúncios no Mobile */
+  .ad-card-3d {
+    min-height: auto !important;
+  }
+
+  .ad-card-inner {
+    padding: 0.85rem !important;
+  }
+
+  .ad-thumbnail-container {
+    height: 180px !important;
+  }
+
+  /* Modais com Safe Area para iPhone notch/home bar */
+  .cyber-modal-content {
+    width: 94vw !important;
+    max-height: 88vh !important;
+    padding: 1.15rem 1rem !important;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  /* Toasts no topo/centro de fácil visualização em tela pequena */
+  #toast-container {
+    top: 1rem !important;
+    right: 1rem !important;
+    left: 1rem !important;
+    max-width: calc(100vw - 2rem) !important;
+  }
+}
+
+
 
 
 

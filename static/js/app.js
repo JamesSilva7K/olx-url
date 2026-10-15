@@ -47,9 +47,16 @@
     }
     const res = await fetch(endpoint, options);
     if (res.status === 403) {
-      const data = await res.json().catch(() => ({}));
-      CyberShield.showToast(data.detail || "Acesso Bloqueado pelo Supremo.", "error");
-      throw new Error(data.detail || "Bloqueado");
+      let detail = "Acesso Bloqueado pelo Supremo.";
+      try {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json")) {
+          const data = await res.json();
+          detail = data.detail || detail;
+        }
+      } catch (e) {}
+      CyberShield.showToast(detail, "error");
+      throw new Error(detail);
     }
     return res;
   }
@@ -278,9 +285,20 @@
         })
       });
 
+      const contentType = res.headers.get("content-type") || "";
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.detail || "Falha na busca.");
+        let errorDetail = `Falha na busca (${res.status}).`;
+        if (contentType.includes("application/json")) {
+          try {
+            const err = await res.json();
+            errorDetail = err.detail || errorDetail;
+          } catch (_) {}
+        }
+        throw new Error(errorDetail);
+      }
+
+      if (!contentType.includes("application/json")) {
+        throw new Error("O servidor retornou uma resposta inesperada (não-JSON). Tentando restabelecer conexão...");
       }
 
       const data = await res.json();
