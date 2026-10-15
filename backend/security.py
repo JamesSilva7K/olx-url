@@ -12,7 +12,22 @@ from .database import is_ip_blocked, block_ip, log_system_event, is_lead_blocked
 RATE_LIMIT_BUCKET = {}
 SUSPICIOUS_PATHS = [
     "wp-admin", "wp-login", ".env", "phpmyadmin", ".git", "cgi-bin",
-    "shell", "config.json", "setup.php", "xmlrpc.php", "actuator"
+    "shell", "config.json", "setup.php", "xmlrpc.php", "actuator",
+    "web.config", "database.sql", "dump.sql", "id_rsa", "server-status",
+    ".aws", ".kube", "swagger-ui", "console", "solr"
+]
+
+SUSPICIOUS_USER_AGENTS = [
+    "sqlmap", "nikto", "masscan", "nmap", "zgrab", "gobuster",
+    "dirbuster", "wpscan", "acunetix", "nessus", "havij", "shodan",
+    "censys", "netsparker", "hydra", "medusa", "fuzz"
+]
+
+MALICIOUS_PATTERNS = [
+    "../", "..\\", "union+select", "union%20select", "<script", "javascript:",
+    "onload=", "onerror=", "exec(", "information_schema", "benchmark(", "sleep(",
+    "${jndi:", "base64_decode", "/etc/passwd", "cmd.exe", "powershell",
+    "0x5c", "waitfor delay", "xp_cmdshell"
 ]
 
 class CyberShieldMiddleware(BaseHTTPMiddleware):
@@ -39,10 +54,21 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         if is_ip_blocked(client_ip):
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "ACESSO_BLOQUEADO", "detail": "IP bloqueado pela blindagem do sistema supremo."}
+                content={"error": "ACESSO_BLOQUEADO", "detail": "IP bloqueado pela blindagem suprema do sistema."}
             )
 
-        # 2. Blindagem contra scanner de portas, sondagem de exploits e Payloads Maliciosos (SQLi, XSS, Path Traversal)
+        # 2. Blindagem contra User-Agents Maliciosos e Scanners Automatizados
+        user_agent = request.headers.get("user-agent", "").lower()
+        for sus_agent in SUSPICIOUS_USER_AGENTS:
+            if sus_agent in user_agent:
+                block_ip(client_ip, f"Scanner automatizado hostil detectado: {user_agent[:60]}")
+                log_system_event("HOSTILE_BOT_BLOCKED", f"Agente malicioso bloqueado: {user_agent[:60]}", client_ip)
+                return JSONResponse(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    content={"error": "CYBER_SHIELD_ACTIVE", "detail": "Acesso negado: ferramenta de escaneamento detectada e neutralizada."}
+                )
+
+        # 3. Blindagem contra rotas críticas e sondagem de exploits
         for sus in SUSPICIOUS_PATHS:
             if sus in req_path:
                 block_ip(client_ip, f"Tentativa de escaneamento de rota proibida: {req_path}")
@@ -52,18 +78,14 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
                     content={"error": "SHIELD_TRIGGERED", "detail": "Ataque ou escaneamento neutralizado."}
                 )
 
+        # 4. Detecção de injeção e travessia de diretório (URL, Query e Headers)
         raw_query = str(request.query_params).lower()
-        # Detecção de injeção e travessia de diretório
-        malicious_patterns = [
-            "../", "..\\", "union+select", "union%20select", "<script", "javascript:",
-            "onload=", "onerror=", "exec(", "information_schema", "benchmark(", "sleep("
-        ]
-        if any(pat in req_path or pat in raw_query for pat in malicious_patterns):
+        if any(pat in req_path or pat in raw_query or pat in user_agent for pat in MALICIOUS_PATTERNS):
             block_ip(client_ip, f"Tentativa de injeção ou exploit: {req_path}")
-            log_system_event("INJECTION_PROBE_BLOCKED", f"Payload hostil neutralizado: {req_path} ? {raw_query}", client_ip)
+            log_system_event("INJECTION_PROBE_BLOCKED", f"Payload hostil neutralizado: {req_path} ? {raw_query[:80]}", client_ip)
             return JSONResponse(
                 status_code=status.HTTP_403_FORBIDDEN,
-                content={"error": "INJECTION_BLOCKED", "detail": "Tentativa de exploit/ataque bloqueada pela blindagem ativa."}
+                content={"error": "INJECTION_BLOCKED", "detail": "Tentativa de exploit bloqueada pela blindagem ativa."}
             )
 
         # 3. Anti-DDoS Rate Limiting por IP
@@ -110,9 +132,11 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["X-Robots-Tag"] = "noindex, nofollow, noarchive"
         response.headers["Permissions-Policy"] = "geolocation=(), camera=(), microphone=()"
+        response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; img-src 'self' https: data: blob: *; connect-src 'self' https: wss: *;"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin-allow-popups"
 
         return response
 

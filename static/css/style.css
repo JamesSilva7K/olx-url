@@ -788,18 +788,91 @@ body {
   background: #0d0f14;
 }
 
-.ad-price-tier-tag {
+.ad-card-overlay-top {
   position: absolute;
   top: 10px;
   left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ad-overlay-left-tags {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  align-items: flex-start;
+}
+
+.ad-price-tier-tag {
   font-size: 0.72rem;
   font-weight: 700;
   font-family: var(--font-mono);
-  padding: 0.32rem 0.75rem;
+  padding: 0.3rem 0.65rem;
   border-radius: var(--radius-full);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  z-index: 2;
+  white-space: nowrap;
+}
+
+.ad-top-deal-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.95), rgba(59, 130, 246, 0.95));
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.6);
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  animation: pulseGlow 2.5s infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.9);
+  }
+}
+
+.ad-lead-tag {
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-family: var(--font-mono);
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--radius-full);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  letter-spacing: 0.4px;
+}
+
+.lead-quente, .lead-hot {
+  background: rgba(239, 68, 68, 0.88);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+.lead-oportunidade, .lead-opp {
+  background: rgba(16, 185, 129, 0.88);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+.lead-regular {
+  background: rgba(30, 41, 59, 0.85);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .tag-alerta-baixo {
@@ -815,14 +888,48 @@ body {
 }
 
 .tag-medio {
-  background: rgba(255, 255, 255, 0.22);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(15, 23, 42, 0.85);
+  color: #f1f5f9;
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 .tag-alto {
   background: rgba(245, 158, 11, 0.9);
   color: #fff;
+}
+
+.ad-card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ad-card-id-code {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.ad-lead-score-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: #fbbf24;
+}
+
+.ad-card-diff-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #38bdf8;
 }
 
 .ad-card-body {
@@ -929,22 +1036,109 @@ body {
   gap: 0.45rem;
 }
 
+/* Bloco de Ações Estratégicas: 2 Ações Separadas e Precisas */
+.ad-actions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 1.15rem;
+  padding-top: 0.95rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 .ad-actions-row {
   display: flex;
-  gap: 0.65rem;
-  margin-top: 1rem;
+  gap: 0.55rem;
+  align-items: center;
 }
 
 .ad-btn-validate {
   flex: 1;
-  background: #ffffff;
-  color: #000;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(241, 245, 249, 0.9));
+  color: #090d16;
   border: none;
   border-radius: var(--radius-sm);
-  padding: 0.65rem;
-  font-size: 0.84rem;
+  padding: 0.72rem 1rem;
+  font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.ad-btn-validate:hover {
+  background: #ffffff;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.ad-btn-external {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.ad-btn-external:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.ad-contact-action-row {
+  width: 100%;
+}
+
+.ad-btn-wpp {
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, #059669, #10b981);
+  color: #ffffff;
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  border-radius: var(--radius-sm);
+  padding: 0.72rem 1rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.25);
+}
+
+.ad-btn-wpp:hover {
+  background: linear-gradient(135deg, #10b981, #34d399);
+  color: #ffffff;
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.5);
+  transform: translateY(-1px);
+}
+
+.ad-btn-wpp-missing {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -952,28 +1146,15 @@ body {
   transition: all 0.2s ease;
 }
 
-.ad-btn-validate:hover {
-  background: #e2e8f0;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.3);
-}
-
-.ad-btn-external {
-  width: 40px;
-  height: 40px;
+.ad-btn-wpp-missing:hover {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  text-decoration: none;
-  transition: all 0.2s ease;
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.ad-btn-external:hover {
-  background: rgba(255, 255, 255, 0.22);
-  border-color: #fff;
+.ad-card-top-deal-highlight {
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(6, 182, 212, 0.18) !important;
 }
 
 /* Badges e Identificadores no Topo do Card */

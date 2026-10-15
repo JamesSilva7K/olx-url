@@ -398,12 +398,16 @@
       data: {
         labels: labels,
         datasets: [{
-          label: 'Anúncios na Faixa',
+          label: 'Anúncios no Mercado',
           data: dataVals,
-          backgroundColor: 'rgba(255, 255, 255, 0.75)',
-          hoverBackgroundColor: '#ffffff',
-          borderRadius: 6,
-          borderSkipped: false
+          backgroundColor: 'rgba(56, 189, 248, 0.45)',
+          borderColor: '#38bdf8',
+          borderWidth: 1.5,
+          hoverBackgroundColor: '#38bdf8',
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 56,
+          barPercentage: 0.65
         }]
       },
       options: {
@@ -616,17 +620,33 @@
       const priceFmt = a.price ? `R$ ${a.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Sob Consulta';
       const tierClass = `tag-${a.price_tier || 'medio'}`;
 
-      // Badges
-      const badgesHtml = (a.badges || []).slice(0, 3).map(b => `<span class="ad-pill-badge">${b}</span>`).join('');
+      // Higienização e desduplicação rigorosa de badges para não colar palavras
+      const uniqueBadges = [];
+      (a.badges || []).forEach(rawB => {
+        const b = (rawB || '').trim();
+        if (b && b.length <= 25 && !uniqueBadges.includes(b)) {
+          // Descarta se for cópia ou concatenação de outro selo
+          const isMerged = uniqueBadges.some(u => u.includes(b) || b.includes(u));
+          if (!isMerged) {
+            uniqueBadges.push(b);
+          }
+        }
+      });
+      const badgesHtml = uniqueBadges.slice(0, 3).map(b => `<span class="ad-pill-badge">${b}</span>`).join('');
 
       return `
-        <div class="ad-3d-card" data-url="${a.url}" data-id="${a.id || ''}">
+        <div class="ad-3d-card ${a.is_top_deal ? 'ad-card-top-deal-highlight' : ''}" data-url="${a.url}" data-id="${a.id || ''}">
           <div class="ad-card-media">
             <img src="${a.image || FALLBACK_AD_IMG}" data-src-original="${a.image || ''}" alt="${a.title}" class="ad-card-img" loading="lazy" referrerpolicy="no-referrer" onerror="handleAdImgError(this)">
-            <span class="ad-price-tier-tag ${tierClass}">
-              ${a.price_badge || 'Preço Normal'}
-            </span>
-            ${a.lead_category ? `<span class="ad-lead-tag ${a.lead_badge_class || 'lead-regular'}" title="Temperatura de Fechamento">${a.lead_category}</span>` : ''}
+            <div class="ad-card-overlay-top">
+              <div class="ad-overlay-left-tags">
+                <span class="ad-price-tier-tag ${tierClass}">
+                  ${a.price_badge || 'Preço Normal'}
+                </span>
+                ${a.is_top_deal ? `<span class="ad-top-deal-tag" title="Analisado como uma das melhores ofertas de compra/revenda">${a.deal_tag || 'MELHOR OFERTA 💎'}</span>` : ''}
+              </div>
+              ${a.lead_category ? `<span class="ad-lead-tag ${a.lead_badge_class || 'lead-regular'}" title="Temperatura de Fechamento do Lead">${a.lead_category}</span>` : ''}
+            </div>
             ${a.has_olx_pay ? `<span class="ad-card-olxpay-badge" title="Pagamento Seguro com Garantia OLX"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:3px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>OLX PAY</span>` : ''}
           </div>
           <div class="ad-card-body">
@@ -636,7 +656,7 @@
               ${a.diff_label ? `<span class="ad-card-diff-tag">${a.diff_label}</span>` : ''}
             </div>
 
-            <div class="ad-badges-row">${badgesHtml}</div>
+            ${badgesHtml ? `<div class="ad-badges-row">${badgesHtml}</div>` : ''}
             
             <h3 class="ad-card-title" title="${a.title}">
               <a href="${a.url}" target="_blank" rel="noopener noreferrer" class="ad-card-title-link">${a.title}</a>
@@ -669,21 +689,34 @@
               </div>
             </div>
 
-            <div class="ad-actions-row">
-              <button class="ad-btn-validate" data-validate-url="${a.url}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                Auditar Anúncio
-              </button>
-              <a href="${a.url}" target="_blank" rel="noopener noreferrer" class="ad-btn-external" title="Abrir anúncio original na OLX Brasil">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-              </a>
+            <!-- Bloco de Ações Estratégicas: 2 Ações Precisas e Descoladas -->
+            <div class="ad-actions-container">
+              <!-- Ação 1: Auditoria Neural Completa do Anúncio -->
+              <div class="ad-actions-row">
+                <button class="ad-btn-validate" data-validate-url="${a.url}" title="Auditar procedência, reputação e margem de negociação">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  <span>Auditar Anúncio</span>
+                </button>
+                <a href="${a.url}" target="_blank" rel="noopener noreferrer" class="ad-btn-external" title="Abrir página oficial do anúncio na OLX">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </a>
+              </div>
+
+              <!-- Ação 2: Contato Direto e Fechamento -->
+              <div class="ad-contact-action-row">
+                ${a.contact && a.contact.has_phone ? `
+                  <a href="${a.contact.whatsapp_url}" target="_blank" rel="noopener noreferrer" class="ad-btn-wpp" title="Negociar direto pelo WhatsApp oficial com script pronto">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.303-.058.116-.087.188-.173.289l-.26.303c-.087.087-.177.181-.076.355.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.174.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
+                    <span>WhatsApp: <strong>${a.contact.phone_formatted}</strong></span>
+                  </a>
+                ` : `
+                  <a href="${a.url}" target="_blank" rel="noopener noreferrer" class="ad-btn-wpp-missing" title="Abrir chat direto na plataforma da OLX">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <span>Negociar no Chat da OLX</span>
+                  </a>
+                `}
+              </div>
             </div>
-            ${a.contact && a.contact.has_phone ? `
-              <a href="${a.contact.whatsapp_url}" target="_blank" rel="noopener noreferrer" class="ad-btn-wpp" title="Negociar direto pelo WhatsApp oficial">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.303-.058.116-.087.188-.173.289l-.26.303c-.087.087-.177.181-.076.355.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.174.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
-                WhatsApp: ${a.contact.phone_formatted}
-              </a>
-            ` : ''}
           </div>
         </div>
       `;

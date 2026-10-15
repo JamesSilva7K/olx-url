@@ -328,17 +328,26 @@ def analyze_lead_intelligence(ad: Dict[str, Any], market_stats: Optional[Dict[st
         "Ofereça pagamento imediato via Pix para barganhar entre 10% e 15% de desconto. "
         "Sempre priorize entrega com teste presencial em local público ou Garantia OLX."
     )
-    if urgency_score > 0:
-        tactical_tip = (
-            "VENDEDOR COM SINAL DE URGÊNCIA DETECTADO! "
-            "Ele demonstrou necessidade de venda rápida. Você tem forte alavancagem para negociar "
-            "um desconto ainda maior à vista."
-        )
+    # 6. Detecção da "Melhor Oferta" (Preço com desconto real, baixo risco e urgência comprovada)
+    is_top_deal = False
+    deal_tag = ""
+    if price > 0 and risk_score <= 35:
+        if price_deviation_pct <= -25:
+            is_top_deal = True
+            deal_tag = f"MELHOR OFERTA ({abs(int(price_deviation_pct))}% OFF) 💎"
+        elif price_deviation_pct <= -15 and (urgency_score > 0 or contact_info.get("has_phone")):
+            is_top_deal = True
+            deal_tag = "OPORTUNIDADE DE OURO 💎"
+        elif urgency_score >= 40:
+            is_top_deal = True
+            deal_tag = "URGÊNCIA DE VENDA ⚡"
 
     return {
         "lead_score": lead_score,
         "lead_category": lead_category,
         "lead_badge_class": lead_badge_class,
+        "is_top_deal": is_top_deal,
+        "deal_tag": deal_tag,
         "contact": contact_info,
         "urgency_signals": detected_urgency_signals,
         "trust_signals": trust_signals,

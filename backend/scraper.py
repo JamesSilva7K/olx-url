@@ -407,11 +407,21 @@ def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: floa
                 installments = inst_tag.get_text(strip=True)
 
             # Selos / Badges (Frete grátis, Garantia da OLX, Entrega fácil, etc.)
-            badges = []
+            raw_badges = []
             for b in sec.find_all(["div", "span"], class_=lambda c: c and ("olx-core-badge" in c or "badge" in c.lower())):
+                # Ignora elementos que tenham outros badges como filhos para não concatenar textos
+                if b.find(["div", "span"], class_=lambda c: c and ("olx-core-badge" in c or "badge" in c.lower())):
+                    continue
                 btxt = b.get_text(strip=True)
-                if btxt and len(btxt) < 35 and btxt not in badges:
-                    badges.append(btxt)
+                if btxt and len(btxt) < 30 and btxt not in raw_badges:
+                    raw_badges.append(btxt)
+            
+            # Remove duplicatas e strings compostas redundantes
+            badges = []
+            for b in raw_badges:
+                if any(b != other and other in b for other in raw_badges):
+                    continue
+                badges.append(b)
 
             # Vendedor e Avaliação
             seller_name = ""
@@ -531,6 +541,8 @@ def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: floa
             a["lead_score"] = intel.get("lead_score", 50)
             a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
             a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
+            a["is_top_deal"] = intel.get("is_top_deal", False)
+            a["deal_tag"] = intel.get("deal_tag", "")
             if not a.get("contact") or not a["contact"].get("has_phone"):
                 if intel.get("contact") and intel["contact"].get("has_phone"):
                     a["contact"] = intel["contact"]
@@ -613,6 +625,9 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             if page_num == 1 and clamped_pages > 1:
                 continue
             break
+
+    # Guarda todos os preços escaneados do mercado real antes de subamostragens/filtros
+    market_prices = [a["price"] for a in all_ads if a.get("price", 0) > 0]
 
     # Se a flag 'Buscar Descrições Completas' ou 'Somente vendedores novos' estiver ativa:
     if (fetch_full_descriptions or only_new_sellers) and all_ads:
@@ -709,10 +724,9 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             # Somente vendedores novos ativo: remove descartados
             all_ads = [a for a in all_ads if not a.get("_discard")]
 
-
-    # Recalcula estatísticas de preços sobre todo o pool de anúncios filtrados
-    all_prices = [a["price"] for a in all_ads if a["price"] > 0]
-    stats = calculate_price_stats(all_prices)
+    # Estatísticas de mercado reais (prioriza todo o pool varrido na OLX)
+    prices_for_stats = market_prices if len(market_prices) >= len(all_ads) and len(market_prices) > 0 else [a["price"] for a in all_ads if a["price"] > 0]
+    stats = calculate_price_stats(prices_for_stats)
 
     avg = stats["average"]
     for a in all_ads:
@@ -752,6 +766,8 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             a["lead_score"] = intel.get("lead_score", 50)
             a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
             a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
+            a["is_top_deal"] = intel.get("is_top_deal", False)
+            a["deal_tag"] = intel.get("deal_tag", "")
             if not a.get("contact") or not a["contact"].get("has_phone"):
                 if intel.get("contact") and intel["contact"].get("has_phone"):
                     a["contact"] = intel["contact"]
