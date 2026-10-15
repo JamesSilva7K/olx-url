@@ -7,7 +7,8 @@ import requests
 from pydantic import BaseModel
 from typing import Optional
 
-from .config import BRAZILIAN_STATES, CATEGORIES, ADMIN_SECRET_KEY
+from .config import BRAZILIAN_STATES, CATEGORIES, ADMIN_SECRET_KEY, DEFAULT_AVATAR_URI
+
 from .database import (
     init_db, get_or_create_lead, update_lead_profile, get_lead_by_vulgo, list_leads,
     toggle_lead_block, delete_lead, is_lead_blocked, log_puxada,
@@ -257,8 +258,9 @@ async def register_or_login(payload: Optional[AuthPayload] = None, request: Requ
 
     # Validação do Avatar (aceita data:image/svg, data:image/png, data:image/jpeg, base64 ou url http)
     avatar = payload.avatar.strip() if payload.avatar else ""
-    if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")):
-        avatar = ""
+    if not avatar or not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")) or len(avatar) < 60:
+        avatar = DEFAULT_AVATAR_URI
+
 
     old_v = (payload.old_vulgo or "").strip()
     if old_v and old_v.lower() != clean_vulgo.lower():
@@ -307,8 +309,9 @@ async def handle_update_profile(request: Request, payload: Optional[UpdateProfil
     user_agent = request.headers.get("User-Agent", "")
 
     avatar = payload.avatar.strip() if payload.avatar else ""
-    if avatar and not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")):
-        avatar = ""
+    if not avatar or not (avatar.startswith("data:image/") or avatar.startswith("http://") or avatar.startswith("https://")) or len(avatar) < 60:
+        avatar = DEFAULT_AVATAR_URI
+
 
     try:
         updated_lead = update_lead_profile(old_v, clean_new_v, avatar, client_ip, user_agent)

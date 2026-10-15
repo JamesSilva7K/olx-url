@@ -5,6 +5,10 @@ SCRAPERAPI_URL = "https://api.scraperapi.com/"
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 ADMIN_SECRET_KEY = os.environ.get("ADMIN_SECRET_KEY", "10072601")
 
+# Avatar Padrão Cyberpunk Vetorial (Lobo da Rede / Shogun)
+DEFAULT_AVATAR_URI = "data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20120%20120%22%3E%3Cdefs%3E%3CradialGradient%20id%3D%22g4%22%20cx%3D%2250%25%22%20cy%3D%2250%25%22%20r%3D%2250%25%22%3E%3Cstop%20offset%3D%220%25%22%20stop-color%3D%22%231e2430%22%2F%3E%3Cstop%20offset%3D%22100%25%22%20stop-color%3D%22%2306080d%22%2F%3E%3C%2FradialGradient%3E%3C%2Fdefs%3E%3Ccircle%20cx%3D%2260%22%20cy%3D%2260%22%20r%3D%2256%22%20fill%3D%22url(%23g4)%22%20stroke%3D%22%23ffffff%22%20stroke-width%3D%223%22%2F%3E%3Cpolygon%20points%3D%2260%2C20%2090%2C44%2082%2C82%2060%2C100%2038%2C82%2030%2C44%22%20fill%3D%22%23ffffff%22%2F%3E%3Cpolygon%20points%3D%2260%2C32%2078%2C50%2060%2C86%2042%2C50%22%20fill%3D%22%230c0e14%22%2F%3E%3Ccircle%20cx%3D%2252%22%20cy%3D%2252%22%20r%3D%223.8%22%20fill%3D%22%23ffffff%22%2F%3E%3Ccircle%20cx%3D%2268%22%20cy%3D%2252%22%20r%3D%223.8%22%20fill%3D%22%23ffffff%22%2F%3E%3C%2Fsvg%3E"
+
+
 # Detecção de ambiente Vercel / Serverless (garante escrita em /tmp para não falhar por read-only filesystem)
 if os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
     DB_PATH = "/tmp/data.sqlite"

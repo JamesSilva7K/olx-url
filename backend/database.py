@@ -2,7 +2,8 @@ import sqlite3
 import datetime
 import os
 from typing import Optional
-from .config import DB_PATH
+from .config import DB_PATH, DEFAULT_AVATAR_URI
+
 
 def get_connection():
     db_dir = os.path.dirname(DB_PATH)
@@ -115,6 +116,18 @@ def init_db():
         VALUES (?, 'scraperapi', 1, 'ready', 0, ?)
         """, ("1aec3392b82784e4578154b96887e010", now_str))
 
+    # Auto-correção de avatares corrompidos ou mockados na inicialização
+    cursor.execute("""
+        UPDATE leads 
+        SET avatar = ? 
+        WHERE avatar IS NULL 
+           OR avatar = '' 
+           OR avatar = 'avatar1' 
+           OR length(avatar) < 60
+           OR avatar LIKE '%test%'
+           OR avatar LIKE '%<svg></svg>%'
+    """, (DEFAULT_AVATAR_URI,))
+
     conn.commit()
     conn.close()
 
@@ -143,7 +156,8 @@ def get_or_create_lead(vulgo: str, avatar: str, ip: str = "127.0.0.1", user_agen
         cursor.execute("""
             INSERT INTO leads (vulgo, avatar, role, status, created_at, last_login, ip_address, user_agent, total_queries)
             VALUES (?, ?, 'lead', 'active', ?, ?, ?, ?, 0)
-        """, (vulgo, avatar or "avatar1", now_str, now_str, ip, user_agent))
+        """, (vulgo, avatar or DEFAULT_AVATAR_URI, now_str, now_str, ip, user_agent))
+
         conn.commit()
         cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (vulgo,))
         lead = dict(cursor.fetchone())
