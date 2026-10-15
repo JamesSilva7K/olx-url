@@ -4336,7 +4336,6 @@ body {
   .admin-subnav {
     display: flex;
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
     white-space: nowrap;
     padding-bottom: 0.5rem;
     gap: 0.4rem;
@@ -4361,6 +4360,7 @@ body {
   .validator-gallery-grid {
     grid-template-columns: 1fr;
   }
+}
 
 /* ==========================================================
    SISTEMA DE NOTIFICAÇÃO TOAST COM VETORES SVG MODERNOS

@@ -11,7 +11,10 @@ from .config import SCRAPERAPI_KEY, SCRAPERAPI_URL, BRAZILIAN_STATES, CATEGORIES
 from .database import get_next_available_token, record_token_request, mark_token_exhausted, update_token_credits, list_api_tokens
 from .ai_engine import extract_phone_and_whatsapp, analyze_lead_intelligence, synthesize_with_gemini
 
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger("scraper")
 
 # Cache em memória para buscas recentes (evita consumo desnecessário de créditos ScraperAPI e acelera navegação)
 HTML_CACHE = {}
