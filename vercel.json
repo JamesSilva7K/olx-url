@@ -12,15 +12,15 @@
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__vpath__=/api/$1"
     },
     {
       "source": "/api",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__vpath__=/api"
     },
     {
       "source": "/((?!api/).*)",
-      "destination": "/api/index.py"
+      "destination": "/api/index.py?__vpath__=/$1"
     }
   ]
 }

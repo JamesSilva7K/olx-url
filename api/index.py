@@ -29,27 +29,32 @@ async def app(scope, receive, send):
             })
             return
 
-        # Busca caminho original em qualquer um dos headers injetados por proxies/Vercel
-        matched_path = (
+        # 1. Prioridade máxima: se __vpath__ foi injetado pelo vercel.json rewrite
+        import urllib.parse
+        parsed_qs = urllib.parse.parse_qs(query_string)
+        if "__vpath__" in parsed_qs and parsed_qs["__vpath__"]:
+            real_path = parsed_qs["__vpath__"][0]
+            if real_path:
+                scope["path"] = real_path
+                scope["raw_path"] = real_path.encode("utf-8")
+                
+                # Remove __vpath__ da query_string para não poluir os endpoints do FastAPI
+                filtered_qs = [(k, v) for k, vs in parsed_qs.items() if k != "__vpath__" for v in vs]
+                new_qs = urllib.parse.urlencode(filtered_qs).encode("utf-8")
+                scope["query_string"] = new_qs
+
+        # 2. Fallbacks de headers
+        elif matched_path := (
             headers.get(b"x-matched-path") or
             headers.get(b"x-forwarded-uri") or
             headers.get(b"x-original-uri") or
             headers.get(b"x-rewrite-url") or
             headers.get(b"x-now-route-matches")
-        )
-        if matched_path:
+        ):
             clean_path = matched_path.decode("utf-8", "ignore").split("?")[0]
             if clean_path and clean_path not in ["/api/index.py", "/api/index"]:
                 scope["path"] = clean_path
                 scope["raw_path"] = clean_path.encode("utf-8")
-            elif clean_path in ["/api/index.py", "/api/index"]:
-                # Se veio para /api/index.py mas a requisição original era /api/..., preserva scope["path"]
-                original_url = headers.get(b"x-url") or headers.get(b"x-real-url")
-                if original_url:
-                    clean_orig = original_url.decode("utf-8", "ignore").split("?")[0]
-                    if clean_orig.startswith("/api/"):
-                        scope["path"] = clean_orig
-                        scope["raw_path"] = clean_orig.encode("utf-8")
         elif scope.get("path") in ["/api/index.py", "/api/index"]:
             scope["path"] = "/"
             scope["raw_path"] = b"/"
