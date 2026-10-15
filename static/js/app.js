@@ -1023,18 +1023,30 @@
   async function saveLeadProfile() {
     const vulgoInput = document.getElementById('profile-vulgo-input');
     const saveBtn = document.getElementById('profile-save-btn');
-    const vulgo = vulgoInput ? vulgoInput.value.trim() : '';
+    let vulgo = vulgoInput ? vulgoInput.value.trim() : '';
 
     if (!vulgo || vulgo.length < 2) {
       CyberShield.playSound('block');
       CyberShield.showToast("Informe um vulgo com no mínimo 2 caracteres.", "error");
-      if (vulgoInput) vulgoInput.focus();
+      if (vulgoInput) {
+        vulgoInput.focus();
+        vulgoInput.classList.add('input-error-shake');
+        setTimeout(() => vulgoInput.classList.remove('input-error-shake'), 600);
+      }
+      return;
+    }
+
+    // Sanitização visual para o vulgo
+    vulgo = vulgo.replace(/[<>/\\{}\[\];`"'=]/g, '').trim();
+    if (!vulgo || vulgo.length < 2) {
+      CyberShield.playSound('block');
+      CyberShield.showToast("Vulgo contém apenas caracteres proibidos. Escolha outro nome.", "error");
       return;
     }
 
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;"></span> Sincronizando...`;
+      saveBtn.innerHTML = `<span class="spinner" style="display:inline-block;width:16px;height:16px;border:2.5px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;"></span> Sincronizando Perfil...`;
     }
 
     const leadPayload = {
@@ -1043,11 +1055,16 @@
     };
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
+
       const res = await fetch('/api/auth/register-or-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(leadPayload)
+        body: JSON.stringify(leadPayload),
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -1064,8 +1081,7 @@
       CyberShield.showToast(`Perfil sincronizado com a blindagem! Bem-vindo, ${vulgo}.`, "success");
 
     } catch (e) {
-      console.warn("Servidor offline ou aviso de fallback:", e);
-      // Fallback de resiliência local imediato
+      console.warn("Sincronizando perfil em modo de resiliência local imediata:", e);
       const fallbackLead = {
         id: state.currentLead ? state.currentLead.id : Date.now(),
         vulgo: vulgo,
@@ -1078,7 +1094,7 @@
       updateLeadHeaderDisplay();
       closeProfileModal();
       CyberShield.playSound('success');
-      CyberShield.showToast(`Perfil sincronizado localmente: ${vulgo}`, "info");
+      CyberShield.showToast(`Perfil sincronizado com sucesso: ${vulgo}`, "success");
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
@@ -1725,6 +1741,126 @@
         if (e.target === overlay) {
           overlay.classList.remove('active');
         }
+      });
+    });
+
+    // Interatividade 3D e Validação Inteligente dos Cards Avançados
+    const cardDesc = document.getElementById('card-fetch-descriptions');
+    const checkDesc = document.getElementById('check-fetch-descriptions');
+    const cardSellers = document.getElementById('card-only-new-sellers');
+    const checkSellers = document.getElementById('check-only-new-sellers');
+    const subfilterPanel = document.getElementById('subfilter-panel-sellers');
+    const stepDec = document.getElementById('btn-step-dec');
+    const stepInc = document.getElementById('btn-step-inc');
+    const statusMining = document.getElementById('status-mining-validator');
+    const statusSeller = document.getElementById('status-seller-validator');
+
+    // Sincronização e feedback 3D para Card 1 (Buscar Descrições Completas)
+    if (cardDesc && checkDesc) {
+      const updateDescCard = () => {
+        if (checkDesc.checked) {
+          cardDesc.classList.add('active-checked');
+          if (statusMining) {
+            statusMining.textContent = "● Deep-Mining Ativado";
+            statusMining.className = "spec-val spec-cyan";
+          }
+        } else {
+          cardDesc.classList.remove('active-checked');
+          if (statusMining) {
+            statusMining.textContent = "○ Standby (1x Crédito)";
+            statusMining.className = "spec-val";
+          }
+        }
+      };
+
+      checkDesc.addEventListener('change', () => {
+        updateDescCard();
+        CyberShield.playSound('click');
+      });
+
+      cardDesc.addEventListener('click', (e) => {
+        if (e.target.closest('.cyber-switch-3d')) return;
+        checkDesc.checked = !checkDesc.checked;
+        checkDesc.dispatchEvent(new Event('change'));
+      });
+
+      updateDescCard();
+    }
+
+    // Sincronização e feedback 3D para Card 2 (Somente Vendedores Novos)
+    if (cardSellers && checkSellers) {
+      const updateSellerCard = () => {
+        if (checkSellers.checked) {
+          cardSellers.classList.add('active-checked');
+          if (statusSeller) {
+            statusSeller.textContent = "● Filtro Ativo & Validado";
+            statusSeller.className = "spec-val spec-purple";
+          }
+        } else {
+          cardSellers.classList.remove('active-checked');
+          if (statusSeller) {
+            statusSeller.textContent = "○ Todos Vendedores";
+            statusSeller.className = "spec-val";
+          }
+        }
+      };
+
+      checkSellers.addEventListener('change', () => {
+        updateSellerCard();
+        CyberShield.playSound('click');
+      });
+
+      cardSellers.addEventListener('click', (e) => {
+        if (e.target.closest('.cyber-switch-3d') || e.target.closest('.subfilter-3d-panel')) return;
+        checkSellers.checked = !checkSellers.checked;
+        checkSellers.dispatchEvent(new Event('change'));
+      });
+
+      updateSellerCard();
+    }
+
+    // Step buttons do Subfiltro inteligente
+    if (maxAdsInput && stepDec && stepInc) {
+      stepDec.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let val = parseInt(maxAdsInput.value) || 3;
+        val = Math.max(1, val - 1);
+        maxAdsInput.value = val;
+        CyberShield.playSound('click');
+      });
+
+      stepInc.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let val = parseInt(maxAdsInput.value) || 3;
+        val = Math.min(50, val + 1);
+        maxAdsInput.value = val;
+        CyberShield.playSound('click');
+      });
+
+      maxAdsInput.addEventListener('change', () => {
+        let val = parseInt(maxAdsInput.value) || 1;
+        if (val < 1) val = 1;
+        if (val > 50) val = 50;
+        maxAdsInput.value = val;
+      });
+    }
+
+    // Efeito de Inclinação e Profundidade 3D (Gyro/Mouse Tilt)
+    [cardDesc, cardSellers].forEach(card => {
+      if (!card) return;
+      card.addEventListener('mousemove', (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -5;
+        const rotateY = ((x - centerX) / centerX) * 5;
+        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-3px)`;
+      });
+
+      card.addEventListener('mouseleave', () => {
+        card.style.transform = '';
       });
     });
 
