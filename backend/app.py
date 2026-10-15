@@ -19,10 +19,21 @@ from .security import CyberShieldMiddleware, generate_session_token, verify_sess
 from .scraper import build_olx_url, fetch_olx_html, parse_search_ads, validate_single_ad, search_olx_advanced
 from .ai_engine import analyze_lead_intelligence, synthesize_with_gemini
 
+from fastapi.middleware.cors import CORSMiddleware
+
 # Inicializa banco de dados SQLite
 init_db()
 
 app = FastAPI(title="OLX Brasil - Consultador, Validador & Painel Supremo", docs_url=None, redoc_url=None)
+
+# Aplica CORSMiddleware oficial para permitir GET, POST, OPTIONS irrestritamente
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Aplica middleware de blindagem cibernética
 app.add_middleware(CyberShieldMiddleware)
@@ -197,8 +208,17 @@ async def image_proxy(url: str):
         raise HTTPException(status_code=502, detail=f"Erro de conexão com o servidor de imagens: {str(e)}")
 
 # Autenticação e Validação Avançada do Lead (Vulgo Seguro + Avatar Blindado)
-@app.post("/api/auth/register-or-login")
-async def register_or_login(payload: AuthPayload, request: Request):
+@app.api_route("/api/auth/register-or-login", methods=["POST", "OPTIONS"])
+@app.api_route("/api/auth/register-or-login/", methods=["POST", "OPTIONS"])
+async def register_or_login(payload: Optional[AuthPayload] = None, request: Request = None):
+    if request and request.method == "OPTIONS":
+        return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+    if payload is None and request:
+        try:
+            body = await request.json()
+            payload = AuthPayload(**body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Dados inválidos.")
     vulgo = payload.vulgo.strip()
     
     # Validação avançada de tamanho
@@ -255,8 +275,31 @@ async def get_current_lead(request: Request, x_lead_vulgo: Optional[str] = Heade
     return {"lead": lead}
 
 # Consultador OLX Brasil (Busca com Filtros Avançados e Cálculo de Preço Médio)
-@app.post("/api/search")
-async def search_olx(payload: SearchPayload, request: Request, x_lead_vulgo: Optional[str] = Header(None)):
+@app.api_route("/api/search", methods=["GET", "POST", "OPTIONS"])
+@app.api_route("/api/search/", methods=["GET", "POST", "OPTIONS"])
+async def search_olx(request: Request, payload: Optional[SearchPayload] = None, x_lead_vulgo: Optional[str] = Header(None)):
+    if request.method == "OPTIONS":
+        return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+
+    # Se for GET ou payload vazio, extrai parâmetros da query string
+    if payload is None:
+        try:
+            body = await request.json()
+            payload = SearchPayload(**body)
+        except Exception:
+            qp = request.query_params
+            payload = SearchPayload(
+                keyword=qp.get("keyword", ""),
+                state_uf=qp.get("state_uf", "BR"),
+                category_id=qp.get("category_id", "todas"),
+                min_price=float(qp.get("min_price")) if qp.get("min_price") else None,
+                max_price=float(qp.get("max_price")) if qp.get("max_price") else None,
+                sort_by=qp.get("sort_by", "recent"),
+                pages=int(qp.get("pages", 1)),
+                fetch_full_descriptions=qp.get("fetch_full_descriptions", "false").lower() in ["true", "1"],
+                only_new_sellers=qp.get("only_new_sellers", "false").lower() in ["true", "1"],
+                max_seller_ads_180d=int(qp.get("max_seller_ads_180d", 3))
+            )
     lead = None
     if x_lead_vulgo:
         if is_lead_blocked(x_lead_vulgo):
@@ -404,8 +447,17 @@ async def get_my_history(x_lead_vulgo: Optional[str] = Header(None)):
     return {"history": history}
 
 # Login do Admin Supremo
-@app.post("/api/admin/login")
-async def admin_login(payload: AdminLoginPayload, request: Request):
+@app.api_route("/api/admin/login", methods=["POST", "OPTIONS"])
+@app.api_route("/api/admin/login/", methods=["POST", "OPTIONS"])
+async def admin_login(payload: Optional[AdminLoginPayload] = None, request: Request = None):
+    if request and request.method == "OPTIONS":
+        return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+    if payload is None and request:
+        try:
+            body = await request.json()
+            payload = AdminLoginPayload(**body)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Dados inválidos.")
     client_ip = request.client.host if request.client else "127.0.0.1"
     key = payload.passkey.strip()
     if key == ADMIN_SECRET_KEY or key == "10072601":
