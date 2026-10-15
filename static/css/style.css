@@ -247,6 +247,10 @@ body {
   display: block;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .lead-vulgo-label {
   font-size: 0.88rem;
   font-weight: 600;

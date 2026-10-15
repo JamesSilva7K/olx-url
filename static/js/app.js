@@ -167,10 +167,10 @@
 
     // 3. Inicializa Dropdown de Ordenação
     const sortItems = [
-      { value: "recent", label: "⏱️ Mais Recentes (Novos Primeiro)" },
+      { value: "recent", label: "Mais Recentes (Novos Primeiro)" },
       { value: "relevance", label: "Mais Relevantes" },
-      { value: "cheapest", label: "💰 Menor Preço" },
-      { value: "expensive", label: "💎 Maior Preço" }
+      { value: "cheapest", label: "Menor Preço" },
+      { value: "expensive", label: "Maior Preço" }
     ];
 
     state.dropdowns.sort = CyberDropdown.create("#dropdown-sort-container", {
@@ -518,9 +518,9 @@
           <div class="ad-card-media">
             <img src="${a.image || FALLBACK_AD_IMG}" data-src-original="${a.image || ''}" alt="${a.title}" class="ad-card-img" loading="lazy" referrerpolicy="no-referrer" onerror="handleAdImgError(this)">
             <span class="ad-price-tier-tag ${tierClass}">
-              ${a.price_tier === 'oportunidade' ? '💎 ' : a.price_tier === 'alerta_baixo' ? '⚠️ ' : ''}${a.price_badge || 'Preço Normal'}
+              ${a.price_badge || 'Preço Normal'}
             </span>
-            ${a.has_olx_pay ? `<span class="ad-card-olxpay-badge" title="Pagamento Seguro com Garantia OLX">🛡️ OLX PAY</span>` : ''}
+            ${a.has_olx_pay ? `<span class="ad-card-olxpay-badge" title="Pagamento Seguro com Garantia OLX"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:3px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>OLX PAY</span>` : ''}
           </div>
           <div class="ad-card-body">
             <div class="ad-card-top-row">
@@ -556,8 +556,8 @@
               </div>
               <div class="ad-meta-row ad-seller-badge-row">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <span>Vendedor: <strong class="text-white">${a.seller_name || 'Vendedor Particular'}</strong> <span class="seller-rating-pill">${a.seller_score || '5.0 ★'}</span></span>
-                ${a.is_new_seller ? `<span class="seller-newbie-pill" title="Conta sem histórico de vendas anteriores na OLX">🌱 0 VENDAS</span>` : ''}
+                <span>Vendedor: <strong class="text-white">${a.seller_name || 'Vendedor Particular'}</strong> <span class="seller-rating-pill">${a.seller_score || '5.0'}</span></span>
+                ${a.is_new_seller ? `<span class="seller-newbie-pill" title="Conta sem histórico de vendas anteriores na OLX"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg> 0 VENDAS</span>` : ''}
               </div>
             </div>
 
@@ -843,12 +843,24 @@
       const guard = document.getElementById('admin-auth-guard');
       const content = document.getElementById('admin-content-wrapper');
       if (!state.adminToken) {
-        if (guard) guard.style.display = 'block';
-        if (content) content.style.display = 'none';
+        if (guard) {
+          guard.classList.remove('hidden');
+          guard.style.display = 'block';
+        }
+        if (content) {
+          content.classList.add('hidden');
+          content.style.display = 'none';
+        }
         openAdminAuthModal();
       } else {
-        if (guard) guard.style.display = 'none';
-        if (content) content.style.display = 'block';
+        if (guard) {
+          guard.classList.add('hidden');
+          guard.style.display = 'none';
+        }
+        if (content) {
+          content.classList.remove('hidden');
+          content.style.display = 'block';
+        }
         loadAdminData();
       }
     }
@@ -1154,8 +1166,14 @@
     const content = document.getElementById('admin-content-wrapper');
 
     if (!state.adminToken) {
-      if (guard) guard.style.display = 'block';
-      if (content) content.style.display = 'none';
+      if (guard) {
+        guard.classList.remove('hidden');
+        guard.style.display = 'block';
+      }
+      if (content) {
+        content.classList.add('hidden');
+        content.style.display = 'none';
+      }
       openAdminAuthModal();
       return;
     }
@@ -1172,8 +1190,14 @@
         return;
       }
       const ovData = await ovRes.json();
-      if (guard) guard.style.display = 'none';
-      if (content) content.style.display = 'block';
+      if (guard) {
+        guard.classList.add('hidden');
+        guard.style.display = 'none';
+      }
+      if (content) {
+        content.classList.remove('hidden');
+        content.style.display = 'block';
+      }
       renderAdminOverview(ovData);
 
       // 2. Leads Sincronizados
@@ -1845,19 +1869,27 @@
       });
     }
 
-    // Efeito de Inclinação e Profundidade 3D (Gyro/Mouse Tilt)
+    // Efeito de Inclinação e Profundidade 3D (Otimizado com rAF sem travamento em PCs modestos)
     [cardDesc, cardSellers].forEach(card => {
       if (!card) return;
+      let tiltTicking = false;
+
       card.addEventListener('mousemove', (e) => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        const rotateX = ((y - centerY) / centerY) * -5;
-        const rotateY = ((x - centerX) / centerX) * 5;
-        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) translateY(-3px)`;
-      });
+        if (!tiltTicking) {
+          window.requestAnimationFrame(() => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const rotateX = ((y - centerY) / centerY) * -4;
+            const rotateY = ((x - centerX) / centerX) * 4;
+            card.style.transform = `perspective(800px) rotateX(${rotateX.toFixed(1)}deg) rotateY(${rotateY.toFixed(1)}deg) translateY(-2px)`;
+            tiltTicking = false;
+          });
+          tiltTicking = true;
+        }
+      }, { passive: true });
 
       card.addEventListener('mouseleave', () => {
         card.style.transform = '';
