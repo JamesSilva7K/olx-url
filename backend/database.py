@@ -225,8 +225,27 @@ def list_leads():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM leads ORDER BY id DESC")
-    leads = [dict(r) for r in cursor.fetchall()]
+    raw_leads = [dict(r) for r in cursor.fetchall()]
     conn.close()
+
+    now = datetime.datetime.now()
+    leads = []
+    for l in raw_leads:
+        is_online = False
+        last_seen_str = l.get("last_login") or l.get("created_at") or ""
+        if last_seen_str:
+            try:
+                # Format: DD/MM/YYYY HH:MM:SS
+                dt = datetime.datetime.strptime(last_seen_str, "%d/%m/%Y %H:%M:%S")
+                diff_seconds = (now - dt).total_seconds()
+                # Consider online if active within last 10 minutes (600s)
+                if 0 <= diff_seconds <= 600:
+                    is_online = True
+            except Exception:
+                pass
+        l["is_online"] = is_online
+        leads.append(l)
+
     return leads
 
 def toggle_lead_block(lead_id: int):
@@ -420,12 +439,28 @@ def get_admin_metrics():
     cursor.execute("SELECT COUNT(*) as c FROM blocked_ips")
     total_blocked_ips = cursor.fetchone()["c"]
 
-    cursor.execute("SELECT * FROM system_logs ORDER BY id DESC LIMIT 20")
+    cursor.execute("SELECT * FROM system_logs ORDER BY id DESC LIMIT 30")
     recent_logs = [dict(r) for r in cursor.fetchall()]
+
+    # Contagem de leads online em tempo real
+    now = datetime.datetime.now()
+    cursor.execute("SELECT last_login FROM leads WHERE status = 'active'")
+    active_leads_rows = cursor.fetchall()
+    online_count = 0
+    for r in active_leads_rows:
+        ll = r["last_login"]
+        if ll:
+            try:
+                dt = datetime.datetime.strptime(ll, "%d/%m/%Y %H:%M:%S")
+                if 0 <= (now - dt).total_seconds() <= 600:
+                    online_count += 1
+            except Exception:
+                pass
 
     conn.close()
     return {
         "total_leads": total_leads,
+        "online_leads": online_count,
         "blocked_leads": blocked_leads,
         "total_puxadas": total_puxadas,
         "total_blocked_ips": total_blocked_ips,

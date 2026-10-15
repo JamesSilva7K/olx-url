@@ -296,6 +296,14 @@ def clean_and_structure_olx_description(raw_desc: str) -> str:
     # Decodifica quebras de linha escapadas
     text = text.replace("\\n", "\n").replace("\\r", "").replace("\r", "")
 
+    # Limpa tentativas de ofuscação com pontos de interrogação entre dígitos: ?1?9?8?0? -> 1980...
+    text = re.sub(r"\?(\d)\?", r"\1", text)
+    text = re.sub(r"(\d)\?(\d)", r"\1\2", text)
+    text = re.sub(r"(\d)\?(\d)", r"\1\2", text) # segunda passagem para encadeados
+
+    # Normaliza sequências exageradas de travessões ou traços (e.g. -------------)
+    text = re.sub(r"[-_=]{3,}", " — ", text)
+
     # Padrões comuns de boilerplates e menus da OLX capturados acidentalmente
     BOILERPLATES = [
         r"Ir para o menu principal.*?(?=Garantia da OLX|Detalhes|\Z)",
@@ -321,18 +329,20 @@ def clean_and_structure_olx_description(raw_desc: str) -> str:
     for b in BOILERPLATES:
         text = re.sub(b, "\n", text, flags=re.IGNORECASE | re.DOTALL)
 
-    # Limpa linhas vazias repetidas
-    lines = [l.strip() for l in text.split("\n")]
+    # Limpa linhas vazias repetidas e formata de modo profissional
+    raw_lines = [l.strip() for l in text.split("\n")]
     filtered_lines = []
-    for l in lines:
+    for l in raw_lines:
         if not l:
             continue
         # Ignora linhas com resíduos irrelevantes
         if l.lower() in ["publicidade", "menu", "buscar", "notificações", "chat"]:
             continue
-        filtered_lines.append(l)
+        # Limpa espaços duplicados
+        clean_l = re.sub(r"[ \t]+", " ", l)
+        filtered_lines.append(clean_l)
 
-    structured = "\n".join(filtered_lines).strip()
+    structured = "\n\n".join(filtered_lines).strip()
     return structured or raw_desc.strip()
 
 def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: float = None, max_price: float = None):
@@ -1001,19 +1011,24 @@ def validate_single_ad(ad_url: str):
             seller_info["is_pro"] = True
 
     # 2. Verificações do perfil do vendedor (E-mail, Telefone, Facebook, etc.)
+    found_tokens = []
     for v_item in soup.find_all(["div", "span", "li"], class_=lambda c: c and ("verified-item" in c.lower() or "verification" in c.lower()) if c else False):
         t = v_item.get_text(strip=True)
-        if t and t not in seller_info["verified_items"]:
-            seller_info["verified_items"].append(t)
+        if t:
+            # Normaliza e divide caso venham colados como "E-mailTelefoneFacebook"
+            for token in ["E-mail", "Telefone", "Facebook", "Identidade"]:
+                if token.lower() in t.lower() and token not in found_tokens:
+                    found_tokens.append(token)
 
     # Varredura por texto de verificações no corpo da página
-    if not seller_info["verified_items"]:
-        m_ver = re.search(r"Informaç[õo]es verificadas\s*([A-Za-z\s\-,]+)", html, re.IGNORECASE)
-        if m_ver:
-            raw_v = m_ver.group(1).strip()
-            for token in ["E-mail", "Telefone", "Facebook", "Identidade"]:
-                if token.lower() in raw_v.lower() and token not in seller_info["verified_items"]:
-                    seller_info["verified_items"].append(token)
+    m_ver = re.search(r"Informaç[õo]es verificadas\s*([A-Za-z\s\-,•]+)", html, re.IGNORECASE)
+    if m_ver:
+        raw_v = m_ver.group(1).strip()
+        for token in ["E-mail", "Telefone", "Facebook", "Identidade"]:
+            if token.lower() in raw_v.lower() and token not in found_tokens:
+                found_tokens.append(token)
+
+    seller_info["verified_items"] = found_tokens
 
     # 3. Vendas concluídas e canceladas no histórico
     for hist_item in soup.find_all(["div", "span", "p"], class_=lambda c: c and ("advc-seller-history__item" in c or "seller" in c) if c else False):

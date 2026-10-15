@@ -740,6 +740,13 @@
             <div class="hud-header"><span class="hud-title">Total de Leads</span></div>
             <div class="hud-value" id="admin-metric-leads">0</div>
           </div>
+          <div class="hud-card border-green-glow">
+            <div class="hud-header">
+              <span class="hud-title">Leads Online Agora</span>
+              <span class="live-dot-pulse"></span>
+            </div>
+            <div class="hud-value text-status-green" id="admin-metric-online">0</div>
+          </div>
           <div class="hud-card">
             <div class="hud-header"><span class="hud-title">Leads Bloqueados</span></div>
             <div class="hud-value text-status-red" id="admin-metric-blocked">0</div>
@@ -757,6 +764,7 @@
         <!-- Subnavegação do Admin -->
         <div class="admin-subnav">
           <button class="admin-subnav-btn active" data-sub="leads">Leads Sincronizados</button>
+          <button class="admin-subnav-btn" data-sub="atividades">Atividades em Tempo Real</button>
           <button class="admin-subnav-btn" data-sub="puxadas">Histórico de Puxadas</button>
           <button class="admin-subnav-btn" data-sub="filtros">Estatísticas de Filtros</button>
           <button class="admin-subnav-btn" data-sub="blindagem">Central de Blindagem & Firewall</button>
@@ -786,7 +794,28 @@
           </div>
         </div>
 
-        <!-- Subtab 2: Histórico de Puxadas -->
+        <!-- Subtab 2: Atividades e Logs do Sistema em Tempo Real -->
+        <div class="admin-subtab-pane control-glass-card" id="admin-sub-atividades">
+          <div class="section-title mb-5 flex-between-wrap">
+            <span>Atividades do Sistema & Ações de Leads em Tempo Real</span>
+            <span class="hud-live-tag"><span class="live-dot-pulse"></span> AO VIVO</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="cyber-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Evento / Tipo</th>
+                  <th>Detalhe da Ação</th>
+                  <th>IP Conectado</th>
+                </tr>
+              </thead>
+              <tbody id="admin-activities-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Subtab 3: Histórico de Puxadas -->
         <div class="admin-subtab-pane control-glass-card" id="admin-sub-puxadas">
           <div class="section-title mb-5">
             <span>Histórico de Consultas e Filtros Executados</span>

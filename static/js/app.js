@@ -787,10 +787,22 @@
 
     if (galleryContainer) {
       if (rep.images && rep.images.length > 0) {
-        galleryContainer.innerHTML = rep.images.map(img => `
-          <img src="${img}" data-src-original="${img}" class="validator-gallery-img" alt="Foto Real Anúncio" loading="lazy" referrerpolicy="no-referrer"
-               onerror="handleAdImgError(this)"
-               onclick="window.open('${img}', '_blank')">
+        galleryContainer.innerHTML = rep.images.map((img, idx) => `
+          <div class="validator-gallery-item">
+            <img src="${img}" data-src-original="${img}" class="validator-gallery-img" alt="Foto Real Anúncio ${idx + 1}" loading="lazy" referrerpolicy="no-referrer"
+                 onerror="handleAdImgError(this)"
+                 onclick="window.open('${img}', '_blank')">
+            <div class="gallery-action-overlay">
+              <button type="button" class="btn-gallery-action btn-gallery-view" title="Visualizar em Tela Cheia" onclick="window.open('${img}', '_blank')">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+                <span>HD</span>
+              </button>
+              <button type="button" class="btn-gallery-action btn-gallery-download" title="Baixar Foto em Alta Definição" onclick="downloadImageDirectly('${img}', 'foto_anuncio_${idx + 1}.jpg', event)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Baixar</span>
+              </button>
+            </div>
+          </div>
         `).join('');
       } else {
         galleryContainer.innerHTML = `<span class="text-muted">Nenhuma imagem adicional extraída.</span>`;
@@ -829,9 +841,19 @@
 
     if (sellerVerifications) {
       if (seller.verified_items && seller.verified_items.length > 0) {
-        sellerVerifications.textContent = seller.verified_items.join(' • ');
+        sellerVerifications.innerHTML = seller.verified_items.map(item => `
+          <span class="seller-verified-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            ${item}
+          </span>
+        `).join('');
       } else {
-        sellerVerifications.textContent = 'Conta Verificada pela Plataforma';
+        sellerVerifications.innerHTML = `
+          <span class="seller-verified-chip text-muted-chip">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Não Informado
+          </span>
+        `;
       }
     }
 
@@ -1999,14 +2021,19 @@
     const f = data.filter_stats || {};
 
     const elLeads = document.getElementById('admin-metric-leads');
+    const elOnline = document.getElementById('admin-metric-online');
     const elPuxadas = document.getElementById('admin-metric-puxadas');
     const elBlocked = document.getElementById('admin-metric-blocked');
     const elShieldIps = document.getElementById('admin-metric-ips');
 
     if (elLeads) elLeads.textContent = m.total_leads || 0;
+    if (elOnline) elOnline.textContent = m.online_leads || 0;
     if (elPuxadas) elPuxadas.textContent = m.total_puxadas || 0;
     if (elBlocked) elBlocked.textContent = m.blocked_leads || 0;
     if (elShieldIps) elShieldIps.textContent = m.total_blocked_ips || 0;
+
+    // Renderiza Atividades e Logs do Sistema em Tempo Real
+    renderAdminActivities(m.recent_logs || []);
 
     // Estatísticas de Filtros (Top UFs e Categorias)
     const ufBox = document.getElementById('admin-top-ufs');
@@ -2030,6 +2057,37 @@
     }
   }
 
+  // Renderização do Feed de Atividades em Tempo Real
+  function renderAdminActivities(logs) {
+    const tbody = document.getElementById('admin-activities-tbody');
+    if (!tbody) return;
+
+    if (!logs || logs.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="empty-table-cell">Nenhum evento registrado recentemente no sistema.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(log => {
+      let badgeClass = 'badge-event-info';
+      if (log.event_type.includes('BLOCKED') || log.event_type.includes('BAN') || log.event_type.includes('FAIL')) {
+        badgeClass = 'badge-event-danger';
+      } else if (log.event_type.includes('SUCCESS') || log.event_type.includes('AUTHENTICATED') || log.event_type.includes('ADDED')) {
+        badgeClass = 'badge-event-success';
+      } else if (log.event_type.includes('PROFILE') || log.event_type.includes('SEARCH')) {
+        badgeClass = 'badge-event-primary';
+      }
+
+      return `
+        <tr>
+          <td class="table-mono text-muted-dim">${log.timestamp}</td>
+          <td><span class="cyber-event-badge ${badgeClass}">${log.event_type}</span></td>
+          <td class="text-white">${log.detail}</td>
+          <td class="table-mono">${log.ip || '-'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
   // Tabela Viva de Leads Sincronizados
   function renderAdminLeads(leads) {
     const tbody = document.getElementById('admin-leads-tbody');
@@ -2042,14 +2100,19 @@
 
     tbody.innerHTML = leads.map(l => {
       const isBlocked = l.status === 'blocked';
+      const isOnline = l.is_online === true;
       return `
         <tr>
           <td>
             <div class="table-user-cell">
-              <div class="avatar-frame">
+              <div class="avatar-frame ${isOnline ? 'avatar-frame-online' : ''}">
                 <img src="${l.avatar || defaultAvatar}" alt="${l.vulgo}">
+                ${isOnline ? '<span class="lead-online-pip" title="Lead Conectado Agora"></span>' : ''}
               </div>
-              <span class="table-vulgo">${l.vulgo}</span>
+              <div class="table-lead-name-col">
+                <span class="table-vulgo">${l.vulgo}</span>
+                ${isOnline ? '<span class="online-tag-micro">ON-LINE</span>' : '<span class="offline-tag-micro">OFFLINE</span>'}
+              </div>
             </div>
           </td>
           <td>${l.created_at}</td>
@@ -2813,6 +2876,36 @@
     setupPriceBaseSlider();
     setupPagesStepperAndAdvancedCards();
   }
+
+  // Função Global de Download Rápido em Alta Resolução
+  window.downloadImageDirectly = async function(imgUrl, fileName, event) {
+    if (event) event.stopPropagation();
+    try {
+      CyberShield.showToast("Iniciando download HD na máxima qualidade...", "info");
+      const res = await fetch(imgUrl, { mode: 'cors' });
+      if (!res.ok) throw new Error("Falha no download direto");
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName || 'imagem_anuncio_olx.jpg';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      CyberShield.showToast("Imagem HD salva com sucesso!", "success");
+    } catch (err) {
+      // Fallback simples se CORS bloquear o fetch
+      const a = document.createElement('a');
+      a.href = imgUrl;
+      a.download = fileName || 'imagem_anuncio_olx.jpg';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      CyberShield.showToast("Imagem aberta para download!", "info");
+    }
+  };
 
   // Executa inicialização assim que o DOM carregar
   if (document.readyState === 'loading') {
