@@ -124,6 +124,16 @@ async def serve_index():
     with open(index_file, "r", encoding="utf-8") as f:
         return HTMLResponse(content=f.read())
 
+@app.get("/api/health")
+@app.get("/api/ping")
+async def health_check():
+    return {
+        "status": "online",
+        "system": "OLX Brasil Advanced Engine",
+        "shield": "CYBER-SHIELD-BLINDAGEM-SUPREMA-V6",
+        "real_metrics_only": True
+    }
+
 # Fallback explícito de entrega estática para ambiente Vercel
 from fastapi.responses import FileResponse, Response
 @app.get("/static/{file_path:path}")
@@ -197,11 +207,11 @@ async def register_or_login(payload: AuthPayload, request: Request):
 
     # Sanitização e proteção contra XSS / injeções no vulgo
     clean_vulgo = re.sub(r"[<>/\\{}\[\];`\"'=]", "", vulgo).strip()
-    if clean_vulgo != vulgo or not re.match(r"^[\w\s\.\-@_]+$", clean_vulgo, re.UNICODE):
+    if not clean_vulgo or len(clean_vulgo) < 2:
         raise HTTPException(status_code=400, detail="Vulgo contém caracteres inválidos ou proibidos.")
 
     # Proteção de nomes reservados do sistema
-    reserved_names = ["admin", "supremo", "root", "system", "moderador", "olx", "bot", "anonymous"]
+    reserved_names = ["admin", "supremo", "root", "system", "moderador", "bot", "anonymous"]
     if clean_vulgo.lower() in reserved_names:
         raise HTTPException(status_code=400, detail="Este vulgo é reservado pelo sistema.")
 
@@ -220,7 +230,7 @@ async def register_or_login(payload: AuthPayload, request: Request):
 
     # Persistência permanente garantida (nunca apaga os dados a não ser por ordem direta do Admin Supremo)
     lead = get_or_create_lead(clean_vulgo, avatar, client_ip, user_agent)
-    token = generate_session_token(clean_vulgo)
+    token = generate_session_token(clean_vulgo, role="lead")
 
     log_system_event("LEAD_AUTHENTICATED", f"Lead validado e autenticado com sucesso: {clean_vulgo}", client_ip)
     return {
@@ -397,12 +407,13 @@ async def get_my_history(x_lead_vulgo: Optional[str] = Header(None)):
 @app.post("/api/admin/login")
 async def admin_login(payload: AdminLoginPayload, request: Request):
     client_ip = request.client.host if request.client else "127.0.0.1"
-    if payload.passkey == ADMIN_SECRET_KEY or payload.passkey == "10072601":
-        token = generate_session_token("ADMIN_SUPREMO")
+    key = payload.passkey.strip()
+    if key == ADMIN_SECRET_KEY or key == "10072601":
+        token = generate_session_token("ADMIN_SUPREMO", role="admin_supremo")
         log_system_event("ADMIN_LOGIN_SUCCESS", "Acesso ao Painel Supremo concedido", client_ip)
         return {"success": True, "admin_token": token}
 
-    log_system_event("ADMIN_LOGIN_FAIL", f"Tentativa de invasão ao Painel Supremo com chave: {payload.passkey}", client_ip)
+    log_system_event("ADMIN_LOGIN_FAIL", f"Tentativa de invasão ao Painel Supremo com chave incorreta", client_ip)
     raise HTTPException(status_code=401, detail="Chave de Acesso Suprema Inválida.")
 
 def verify_admin_auth(authorization: Optional[str] = Header(None)):

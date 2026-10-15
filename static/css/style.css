@@ -1436,51 +1436,180 @@ body {
   transform: rotate(90deg);
 }
 
-/* Avatar selection in Profile Modal */
+/* ==========================================================
+   MODAL DE IDENTIFICAÇÃO DO LEAD (CYBERPUNK HIGH-TECH)
+   ========================================================== */
+.modal-center-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0.5rem 0 1.75rem 0;
+  position: relative;
+}
+
+.avatar-frame-large {
+  width: 120px;
+  height: 120px;
+  min-width: 120px;
+  min-height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 50%, #151922 0%, #06080c 100%);
+  border: 3px solid #ffffff;
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.45), 0 0 70px rgba(255, 255, 255, 0.15), inset 0 0 15px rgba(255, 255, 255, 0.2);
+  transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: relative;
+}
+
+.avatar-frame-large::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  right: -8px;
+  bottom: -8px;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  animation: rotateSlow 24s linear infinite;
+}
+
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.avatar-frame-large:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 45px rgba(255, 255, 255, 0.65), 0 0 90px rgba(255, 255, 255, 0.25);
+}
+
+.avatar-frame-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.filter-label-lead {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-bottom: 0.6rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .avatar-preset-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 0.75rem;
-  margin: 1rem 0;
+  gap: 0.85rem;
+  margin: 1.1rem 0 1.5rem 0;
+  padding: 0.25rem;
 }
 
 .avatar-preset-item {
   width: 100%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 2px solid rgba(255, 255, 255, 0.22);
   cursor: pointer;
   object-fit: cover;
-  transition: all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  background: #111317;
+  transition: all 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: radial-gradient(circle at 50% 50%, #171b24 0%, #08090d 100%);
   display: block;
+  padding: 2px;
 }
 
 .avatar-preset-item:hover {
-  transform: scale(1.12);
-  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-4px) scale(1.12);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.8), 0 0 16px rgba(255, 255, 255, 0.4);
 }
 
 .avatar-preset-item.selected {
   border-color: #ffffff;
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.6);
-  transform: scale(1.08);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.85), 0 0 45px rgba(255, 255, 255, 0.35);
+  transform: scale(1.1);
+  background: radial-gradient(circle at 50% 50%, #252b3a 0%, #0b0d14 100%);
 }
 
 .avatar-upload-area {
-  margin-top: 1.25rem;
-  border: 2px dashed rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-md);
-  padding: 1.4rem;
+  margin-top: 1rem;
+  border: 2px dashed rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-md, 12px);
+  padding: 1.6rem 1.25rem;
   text-align: center;
   cursor: pointer;
   transition: all 0.25s ease;
-  background: rgba(255, 255, 255, 0.015);
+  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  outline: none;
 }
 
-.avatar-upload-area:hover {
+.avatar-upload-area:hover,
+.avatar-upload-area:focus-visible {
   border-color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+}
+
+.avatar-upload-area.dragover {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);
+  transform: scale(1.02);
+}
+
+.upload-icon-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 0.6rem;
+  color: #ffffff;
+  transition: all 0.25s ease;
+}
+
+.avatar-upload-area:hover .upload-icon-wrapper {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+}
+
+.avatar-upload-area .upload-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+}
+
+.avatar-upload-area .upload-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.avatar-upload-area .upload-status {
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  color: #38bdf8;
+  font-weight: 600;
+  display: none;
+}
+
+.avatar-upload-area .upload-status.active {
+  display: block;
 }
 
 /* 3D Holographic Scanner Overlay */

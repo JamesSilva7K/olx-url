@@ -195,7 +195,9 @@
     list.forEach((item, idx) => {
       const img = document.createElement('img');
       img.src = item.svg;
-      img.className = `avatar-preset-item ${idx === 0 ? 'selected' : ''}`;
+      const isSelected = selectedAvatar === item.svg || (!selectedAvatar && idx === 3);
+      img.className = `avatar-preset-item ${isSelected ? 'selected' : ''}`;
+      img.setAttribute('data-id', item.id);
       img.setAttribute('data-idx', idx);
       img.alt = item.name;
       img.title = item.name;
@@ -205,7 +207,15 @@
         img.classList.add('selected');
         selectedAvatar = item.svg;
         const preview = document.getElementById('profile-avatar-preview');
-        if (preview) preview.src = selectedAvatar;
+        if (preview) {
+          preview.style.opacity = '0';
+          setTimeout(() => {
+            preview.src = selectedAvatar;
+            preview.style.opacity = '1';
+          }, 100);
+        }
+        const statusText = document.getElementById('upload-status-text');
+        if (statusText) statusText.classList.remove('active');
         CyberShield.playSound('click');
       });
 
@@ -830,7 +840,17 @@
     if (tabId === 'perfil') {
       loadMyHistory();
     } else if (tabId === 'admin') {
-      loadAdminData();
+      const guard = document.getElementById('admin-auth-guard');
+      const content = document.getElementById('admin-content-wrapper');
+      if (!state.adminToken) {
+        if (guard) guard.style.display = 'block';
+        if (content) content.style.display = 'none';
+        openAdminAuthModal();
+      } else {
+        if (guard) guard.style.display = 'none';
+        if (content) content.style.display = 'block';
+        loadAdminData();
+      }
     }
 
     CyberShield.playSound('click');
@@ -886,20 +906,117 @@
 
     const vulgoInput = document.getElementById('profile-vulgo-input');
     const preview = document.getElementById('profile-avatar-preview');
+    const statusText = document.getElementById('upload-status-text');
+    if (statusText) statusText.classList.remove('active');
 
     if (state.currentLead) {
       if (vulgoInput) vulgoInput.value = state.currentLead.vulgo;
-      if (preview) preview.src = state.currentLead.avatar || defaultAvatar;
       selectedAvatar = state.currentLead.avatar || defaultAvatar;
     } else {
-      if (vulgoInput) vulgoInput.value = '';
-      if (preview) preview.src = selectedAvatar || defaultAvatar;
+      if (vulgoInput && !vulgoInput.value) vulgoInput.value = 'NG7K';
+      selectedAvatar = selectedAvatar || defaultAvatar;
+    }
+
+    if (preview) preview.src = selectedAvatar;
+    renderAvatarPresets();
+
+    if (vulgoInput) {
+      setTimeout(() => {
+        vulgoInput.focus();
+        vulgoInput.select();
+      }, 150);
     }
   }
 
   function closeProfileModal() {
     const modal = document.getElementById('profile-modal');
     if (modal) modal.classList.remove('active');
+  }
+
+  // Processa arquivo de imagem da máquina (redimensiona em canvas para performance e confiabilidade)
+  function processAvatarFile(file) {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      CyberShield.playSound('block');
+      CyberShield.showToast("Por favor, selecione um arquivo de imagem válido (PNG, JPG, SVG, WebP).", "error");
+      return;
+    }
+
+    // Limite de 8MB
+    if (file.size > 8 * 1024 * 1024) {
+      CyberShield.showToast("A imagem selecionada é muito grande. Escolha uma foto de até 8MB.", "error");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      const rawData = evt.target.result;
+
+      // Otimização inteligente via Canvas para imagens bitmap grandes (mantém qualidade perfeita com tamanho leve)
+      if (file.type !== 'image/svg+xml') {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxDim = 256;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          selectedAvatar = canvas.toDataURL('image/png');
+          applyUploadedAvatar(file.name);
+        };
+        img.onerror = function() {
+          selectedAvatar = rawData;
+          applyUploadedAvatar(file.name);
+        };
+        img.src = rawData;
+      } else {
+        selectedAvatar = rawData;
+        applyUploadedAvatar(file.name);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function applyUploadedAvatar(fileName) {
+    const preview = document.getElementById('profile-avatar-preview');
+    if (preview) {
+      preview.style.opacity = '0';
+      setTimeout(() => {
+        preview.src = selectedAvatar;
+        preview.style.opacity = '1';
+      }, 120);
+    }
+
+    // Desmarca presets
+    document.querySelectorAll('.avatar-preset-item').forEach(i => i.classList.remove('selected'));
+
+    const statusText = document.getElementById('upload-status-text');
+    if (statusText) {
+      statusText.textContent = `✓ Foto carregada: ${fileName || 'avatar customizado'}`;
+      statusText.classList.add('active');
+    }
+
+    CyberShield.playSound('click');
+    CyberShield.showToast("Avatar carregado da máquina com sucesso!", "success");
+  }
+
+  // Upload do Avatar da Máquina do Lead via input file
+  function handleMachineAvatarUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (file) processAvatarFile(file);
   }
 
   // Salvar Perfil do Lead (Vulgo + Avatar da máquina ou preset)
@@ -917,7 +1034,7 @@
 
     if (saveBtn) {
       saveBtn.disabled = true;
-      saveBtn.textContent = "Sincronizando...";
+      saveBtn.innerHTML = `<span class="spinner" style="display:inline-block;width:14px;height:14px;border:2px solid #fff;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;"></span> Sincronizando...`;
     }
 
     const leadPayload = {
@@ -947,9 +1064,10 @@
       CyberShield.showToast(`Perfil sincronizado com a blindagem! Bem-vindo, ${vulgo}.`, "success");
 
     } catch (e) {
-      // Fallback de resiliência: se o servidor estiver sem rede, salva perfil localmente
+      console.warn("Servidor offline ou aviso de fallback:", e);
+      // Fallback de resiliência local imediato
       const fallbackLead = {
-        id: Date.now(),
+        id: state.currentLead ? state.currentLead.id : Date.now(),
         vulgo: vulgo,
         avatar: selectedAvatar || defaultAvatar,
         role: 'lead',
@@ -959,36 +1077,14 @@
       localStorage.setItem('olx_lead_profile', JSON.stringify(fallbackLead));
       updateLeadHeaderDisplay();
       closeProfileModal();
-      CyberShield.showToast(`Perfil salvo localmente no terminal: ${vulgo}`, "info");
+      CyberShield.playSound('success');
+      CyberShield.showToast(`Perfil sincronizado localmente: ${vulgo}`, "info");
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
         saveBtn.textContent = "Salvar & Ingressar no Sistema";
       }
     }
-  }
-
-  // Upload do Avatar da Máquina do Lead via FileReader (Base64)
-  function handleMachineAvatarUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      CyberShield.showToast("Por favor, selecione um arquivo de imagem válido.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(evt) {
-      selectedAvatar = evt.target.result;
-      const preview = document.getElementById('profile-avatar-preview');
-      if (preview) preview.src = selectedAvatar;
-
-      // Desmarca os presets
-      document.querySelectorAll('.avatar-preset-item').forEach(i => i.classList.remove('selected'));
-      CyberShield.showToast("Avatar anexado da sua máquina com sucesso!", "success");
-    };
-    reader.readAsDataURL(file);
   }
 
   // Autenticação do Admin Supremo
@@ -1038,7 +1134,12 @@
 
   // Carrega Dados do Painel Admin Supremo com Cabeçalho Blindado
   async function loadAdminData() {
+    const guard = document.getElementById('admin-auth-guard');
+    const content = document.getElementById('admin-content-wrapper');
+
     if (!state.adminToken) {
+      if (guard) guard.style.display = 'block';
+      if (content) content.style.display = 'none';
       openAdminAuthModal();
       return;
     }
@@ -1050,44 +1151,64 @@
     try {
       // 1. Overview & Métricas
       const ovRes = await fetch('/api/admin/overview', { headers: adminHeaders });
-      if (ovRes.status === 401) {
-        logoutAdmin();
+      if (ovRes.status === 401 || ovRes.status === 403) {
+        logoutAdmin(true);
         return;
       }
       const ovData = await ovRes.json();
+      if (guard) guard.style.display = 'none';
+      if (content) content.style.display = 'block';
       renderAdminOverview(ovData);
 
       // 2. Leads Sincronizados
       const leadsRes = await fetch('/api/admin/leads', { headers: adminHeaders });
-      const leadsData = await leadsRes.json();
-      renderAdminLeads(leadsData.leads || []);
+      if (leadsRes.ok) {
+        const leadsData = await leadsRes.json();
+        renderAdminLeads(leadsData.leads || []);
+      }
 
       // 3. Histórico Global de Puxadas
       const histRes = await fetch('/api/admin/history', { headers: adminHeaders });
-      const histData = await histRes.json();
-      renderAdminHistory(histData.history || []);
+      if (histRes.ok) {
+        const histData = await histRes.json();
+        renderAdminHistory(histData.history || []);
+      }
 
       // 4. IPs Bloqueados na Blindagem
       const ipsRes = await fetch('/api/admin/security/ips', { headers: adminHeaders });
-      const ipsData = await ipsRes.json();
-      renderAdminSecurity(ipsData.blocked_ips || []);
+      if (ipsRes.ok) {
+        const ipsData = await ipsRes.json();
+        renderAdminSecurity(ipsData.blocked_ips || []);
+      }
 
       // 5. Pool de Tokens API (ScraperAPI)
       const tokensRes = await fetch('/api/admin/tokens', { headers: adminHeaders });
-      const tokensData = await tokensRes.json();
-      renderAdminTokens(tokensData.tokens || []);
+      if (tokensRes.ok) {
+        const tokensData = await tokensRes.json();
+        renderAdminTokens(tokensData.tokens || []);
+      }
 
     } catch (e) {
-      console.error(e);
+      console.error("Falha ao carregar dados do admin:", e);
+      logoutAdmin(true);
     }
   }
 
-  function logoutAdmin() {
+  function logoutAdmin(isExpired = false) {
     state.adminToken = null;
     sessionStorage.removeItem('olx_admin_token');
+    const guard = document.getElementById('admin-auth-guard');
+    const content = document.getElementById('admin-content-wrapper');
+    if (guard) guard.style.display = 'block';
+    if (content) content.style.display = 'none';
     switchTab('consultador');
-    openAdminAuthModal();
-    CyberShield.showToast("Sessão Suprema Expirada. Faça login novamente.", "error");
+    if (isExpired) {
+      CyberShield.playSound('block');
+      CyberShield.showToast("Sessão Suprema Expirada ou Chave Revogada.", "error");
+    } else {
+      CyberShield.playSound('click');
+      CyberShield.showToast("Sessão Suprema Desconectada com Sucesso.", "info");
+    }
   }
 
   function renderAdminOverview(data) {
@@ -1488,18 +1609,70 @@
       saveProfileBtn.addEventListener('click', saveLeadProfile);
     }
 
+    const vulgoInput = document.getElementById('profile-vulgo-input');
+    if (vulgoInput) {
+      vulgoInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveLeadProfile();
+        }
+      });
+    }
+
     const closeProfileBtn = document.getElementById('profile-modal-close');
     if (closeProfileBtn) {
       closeProfileBtn.addEventListener('click', closeProfileModal);
     }
 
-    // Upload de Imagem do Avatar da Máquina
+    // Fechar modal ao clicar fora no overlay
+    const profileModal = document.getElementById('profile-modal');
+    if (profileModal) {
+      profileModal.addEventListener('click', (e) => {
+        if (e.target === profileModal && state.currentLead) {
+          closeProfileModal();
+        }
+      });
+    }
+
+    // Upload de Imagem do Avatar da Máquina com Drag and Drop Avançado
     const fileInput = document.getElementById('machine-avatar-file');
     const uploadArea = document.getElementById('machine-avatar-upload-area');
 
     if (uploadArea && fileInput) {
       uploadArea.addEventListener('click', () => fileInput.click());
+      uploadArea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          fileInput.click();
+        }
+      });
+
       fileInput.addEventListener('change', handleMachineAvatarUpload);
+
+      // Eventos de Drag and Drop
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          uploadArea.classList.add('dragover');
+        });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadArea.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          uploadArea.classList.remove('dragover');
+        });
+      });
+
+      uploadArea.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt && dt.files;
+        if (files && files.length > 0) {
+          processAvatarFile(files[0]);
+        }
+      });
     }
 
     // Admin Trigger & Auth
@@ -1514,9 +1687,31 @@
       });
     }
 
+    // Botão de Logout Supremo
+    const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    if (adminLogoutBtn) {
+      adminLogoutBtn.addEventListener('click', () => logoutAdmin(false));
+    }
+
+    // Botão de Login no Guard
+    const adminGuardLoginBtn = document.getElementById('admin-guard-login-btn');
+    if (adminGuardLoginBtn) {
+      adminGuardLoginBtn.addEventListener('click', openAdminAuthModal);
+    }
+
     const adminAuthSubmit = document.getElementById('admin-auth-submit-btn');
     if (adminAuthSubmit) {
       adminAuthSubmit.addEventListener('click', submitAdminAuth);
+    }
+
+    const adminPassInput = document.getElementById('admin-passkey-input');
+    if (adminPassInput) {
+      adminPassInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitAdminAuth();
+        }
+      });
     }
 
     const adminAuthClose = document.getElementById('admin-auth-modal-close');

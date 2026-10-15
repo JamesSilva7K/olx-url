@@ -2,7 +2,7 @@ import time
 import hmac
 import hashlib
 import json
-from fastapi import Request, HTTPException, status
+from fastapi import Request, Response, HTTPException, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from .config import ADMIN_SECRET_KEY
@@ -20,10 +20,19 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         client_ip = request.client.host if request.client else "127.0.0.1"
         req_path = request.url.path.lower()
 
+        # Se for requisição OPTIONS (CORS preflight), responde imediatamente com headers de permissão
+        if request.method == "OPTIONS":
+            cors_resp = Response(status_code=200)
+            cors_resp.headers["Access-Control-Allow-Origin"] = "*"
+            cors_resp.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+            cors_resp.headers["Access-Control-Allow-Headers"] = "*"
+            return cors_resp
+
         # Arquivos estáticos (CSS, JS, imagens) passam direto sem rate limit de DDoS para carregar instantaneamente
         if "/static/" in req_path or req_path.startswith("/static") or req_path == "/favicon.ico":
             response = await call_next(request)
             response.headers["Cache-Control"] = "public, max-age=86400"
+            response.headers["Access-Control-Allow-Origin"] = "*"
             return response
 
         # 1. Checagem de IP Bloqueado
@@ -93,8 +102,11 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
 
         # 5. Camuflagem de Headers e Blindagem HTTP Reforçada
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+        response.headers["Access-Control-Allow-Headers"] = "*"
         response.headers["Server"] = "CYBER-SHIELD-BLINDAGEM-SUPREMA-V6"
-        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
@@ -104,24 +116,39 @@ class CyberShieldMiddleware(BaseHTTPMiddleware):
 
         return response
 
-def generate_session_token(vulgo: str) -> str:
-    """Gera um token criptografado HMAC-SHA256 para o lead."""
+def generate_session_token(vulgo: str, role: str = "lead") -> str:
+    """Gera um token criptografado HMAC-SHA256 com timestamp e role segregada."""
     timestamp = str(int(time.time()))
-    payload = f"{vulgo}:{timestamp}:{ADMIN_SECRET_KEY}"
+    payload = f"{vulgo}:{role}:{timestamp}:{ADMIN_SECRET_KEY}"
     signature = hmac.new(ADMIN_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
-    return f"{vulgo}.{timestamp}.{signature}"
+    return f"{vulgo}.{role}.{timestamp}.{signature}"
 
-def verify_session_token(token: str) -> str | None:
-    """Valida a integridade do token assinado."""
+def verify_session_token(token: str, max_age_seconds: int = 14400) -> str | None:
+    """Valida a integridade, formato e expiração (padrão 4 horas) do token assinado."""
+    if not token or not isinstance(token, str):
+        return None
     try:
         parts = token.split(".")
-        if len(parts) != 3:
-            return None
-        vulgo, timestamp, sig = parts
-        payload = f"{vulgo}:{timestamp}:{ADMIN_SECRET_KEY}"
-        expected_sig = hmac.new(ADMIN_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
-        if hmac.compare_digest(sig, expected_sig):
-            return vulgo
+        # Novo formato: vulgo.role.timestamp.sig
+        if len(parts) == 4:
+            vulgo, role, timestamp, sig = parts
+            ts = int(timestamp)
+            if time.time() - ts > max_age_seconds:
+                return None
+            payload = f"{vulgo}:{role}:{timestamp}:{ADMIN_SECRET_KEY}"
+            expected_sig = hmac.new(ADMIN_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+            if hmac.compare_digest(sig, expected_sig):
+                return vulgo
+        # Compatibilidade com formato legado: vulgo.timestamp.sig
+        elif len(parts) == 3:
+            vulgo, timestamp, sig = parts
+            ts = int(timestamp)
+            if time.time() - ts > max_age_seconds:
+                return None
+            payload = f"{vulgo}:{timestamp}:{ADMIN_SECRET_KEY}"
+            expected_sig = hmac.new(ADMIN_SECRET_KEY.encode(), payload.encode(), hashlib.sha256).hexdigest()
+            if hmac.compare_digest(sig, expected_sig):
+                return vulgo
     except Exception:
         return None
     return None

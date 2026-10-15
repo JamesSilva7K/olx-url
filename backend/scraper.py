@@ -213,9 +213,31 @@ def fetch_olx_html(target_url: str) -> str:
             last_err = e
             continue
 
+    # Fallback de Conexão Direta à OLX com Headers Camuflados caso os nós ScraperAPI oscilem
+    try:
+        direct_headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
+            "Sec-Ch-Ua-Mobile": "?0",
+            "Sec-Ch-Ua-Platform": '"Windows"',
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Upgrade-Insecure-Requests": "1"
+        }
+        direct_resp = requests.get(target_url, headers=direct_headers, timeout=12)
+        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text):
+            HTML_CACHE[target_url] = (now, direct_resp.text)
+            return direct_resp.text
+    except Exception:
+        pass
+
     if last_err:
         raise last_err
-    raise RuntimeError("Falha ao comunicar com os nós da ScraperAPI.")
+    raise RuntimeError("Falha de conexão com os servidores da OLX Brasil.")
 
 def parse_search_ads(html_content: str, sort_by: str = "recent"):
     """Extrai os anúncios reais da página da OLX Brasil ordenados do mais recente para o mais antigo por padrão."""

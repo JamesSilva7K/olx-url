@@ -8,32 +8,32 @@ window.CyberAvatars = (function() {
     {
       id: "operator_phantom",
       name: "Operador Fantasma",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a1d24"/><stop offset="100%" stop-color="#060709"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g1)" stroke="#ffffff" stroke-width="2.5"/><circle cx="60" cy="46" r="22" fill="#ffffff"/><path d="M28 98 C32 72 88 72 92 98 Z" fill="#ffffff"/><circle cx="52" cy="45" r="4" fill="#000000"/><circle cx="68" cy="45" r="4" fill="#000000"/><rect x="44" y="54" width="32" height="4" rx="2" fill="#000000"/></svg>`
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g1" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#222632"/><stop offset="100%" stop-color="#0a0c10"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g1)" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"/><circle cx="60" cy="48" r="18" fill="#ffffff"/><path d="M30 96 C32 74 88 74 90 96" fill="#ffffff"/><circle cx="53" cy="46" r="3.2" fill="#0c0e14"/><circle cx="67" cy="46" r="3.2" fill="#0c0e14"/><path d="M52 56 Q60 62 68 56" stroke="#0c0e14" stroke-width="3" stroke-linecap="round" fill="none"/></svg>`
     },
     {
-      id: "cyber_ninja",
-      name: "Cyber Shinobi",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#27272a"/><stop offset="100%" stop-color="#09090b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g2)" stroke="#cbd5e1" stroke-width="2.5"/><polygon points="60,18 96,82 24,82" fill="#ffffff"/><polygon points="60,34 84,76 36,76" fill="#09090b"/><circle cx="60" cy="58" r="7" fill="#ffffff"/><path d="M20 102 C35 88 85 88 100 102 Z" fill="#ffffff"/></svg>`
+      id: "delta_illuminati",
+      name: "Delta Sentinel",
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g2" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#242836"/><stop offset="100%" stop-color="#090b0e"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g2)" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"/><polygon points="60,24 94,80 26,80" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linejoin="round"/><polygon points="60,38 82,74 38,74" fill="#ffffff"/><circle cx="60" cy="59" r="6" fill="#0c0e14"/><path d="M22 96 Q60 84 98 96" stroke="#ffffff" stroke-width="5" stroke-linecap="round" fill="none"/></svg>`
     },
     {
-      id: "neural_bot",
-      name: "Androide V5",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g3" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#18181b"/><stop offset="100%" stop-color="#000000"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g3)" stroke="#ffffff" stroke-width="2.5"/><rect x="34" y="32" width="52" height="46" rx="12" fill="#ffffff"/><circle cx="48" cy="50" r="5" fill="#000000"/><circle cx="72" cy="50" r="5" fill="#000000"/><line x1="44" y1="64" x2="76" y2="64" stroke="#000000" stroke-width="4" stroke-linecap="round"/><line x1="60" y1="18" x2="60" y2="32" stroke="#ffffff" stroke-width="4"/><circle cx="60" cy="16" r="4" fill="#ffffff"/><path d="M26 104 C34 86 86 86 94 104 Z" fill="#ffffff"/></svg>`
+      id: "cyber_droid",
+      name: "Androide Cyber",
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#202430"/><stop offset="100%" stop-color="#08090d"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g3)" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"/><line x1="60" y1="20" x2="60" y2="34" stroke="#ffffff" stroke-width="4"/><circle cx="60" cy="18" r="4.5" fill="#ffffff"/><rect x="33" y="34" width="54" height="42" rx="10" fill="#ffffff"/><rect x="25" y="46" width="6" height="18" rx="3" fill="#ffffff"/><rect x="89" y="46" width="6" height="18" rx="3" fill="#ffffff"/><circle cx="48" cy="50" r="5.5" fill="#0c0e14"/><circle cx="72" cy="50" r="5.5" fill="#0c0e14"/><path d="M46 63 Q60 70 74 63" stroke="#0c0e14" stroke-width="3.5" stroke-linecap="round" fill="none"/><path d="M28 98 C36 84 84 84 92 98" fill="#ffffff"/></svg>`
     },
     {
       id: "crypto_wolf",
-      name: "Lobo da Rede",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g4" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f172a"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g4)" stroke="#e2e8f0" stroke-width="2.5"/><polygon points="60,22 88,44 82,78 60,98 38,78 32,44" fill="#ffffff"/><polygon points="60,34 76,50 60,82 44,50" fill="#000000"/><circle cx="52" cy="52" r="3.5" fill="#ffffff"/><circle cx="68" cy="52" r="3.5" fill="#ffffff"/></svg>`
+      name: "Lobo da Rede / Shogun",
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g4" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1e2430"/><stop offset="100%" stop-color="#06080d"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g4)" stroke="#ffffff" stroke-width="3"/><polygon points="60,20 90,44 82,82 60,100 38,82 30,44" fill="#ffffff"/><polygon points="60,32 78,50 60,86 42,50" fill="#0c0e14"/><circle cx="52" cy="52" r="3.8" fill="#ffffff"/><circle cx="68" cy="52" r="3.8" fill="#ffffff"/></svg>`
     },
     {
-      id: "agent_supremo",
-      name: "Comandante Alfa",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g5" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#27272a"/><stop offset="100%" stop-color="#09090b"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g5)" stroke="#ffffff" stroke-width="2.5"/><circle cx="60" cy="48" r="20" fill="#ffffff"/><path d="M22 102 C30 76 90 76 98 102 Z" fill="#ffffff"/><rect x="42" y="44" width="36" height="8" rx="4" fill="#000000"/><line x1="60" y1="20" x2="60" y2="28" stroke="#ffffff" stroke-width="3"/></svg>`
+      id: "orbital_pilot",
+      name: "Piloto Orbital",
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g5" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#222736"/><stop offset="100%" stop-color="#080a0f"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g5)" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"/><circle cx="60" cy="48" r="22" fill="#ffffff"/><line x1="60" y1="18" x2="60" y2="26" stroke="#ffffff" stroke-width="4"/><circle cx="60" cy="16" r="3.5" fill="#ffffff"/><rect x="40" y="44" width="40" height="9" rx="4.5" fill="#0c0e14"/><path d="M22 96 C30 76 90 76 98 96" fill="#ffffff"/></svg>`
     },
     {
-      id: "matrix_sentinel",
-      name: "Sentinela Cyber",
-      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><linearGradient id="g6" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#111827"/><stop offset="100%" stop-color="#030712"/></linearGradient></defs><circle cx="60" cy="60" r="58" fill="url(#g6)" stroke="#94a3b8" stroke-width="2.5"/><path d="M60 22 L92 42 L92 78 L60 98 L28 78 L28 42 Z" fill="none" stroke="#ffffff" stroke-width="4"/><circle cx="60" cy="60" r="14" fill="#ffffff"/><circle cx="60" cy="60" r="5" fill="#000000"/></svg>`
+      id: "matrix_hex",
+      name: "Hexágono Guardião",
+      rawSvg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><defs><radialGradient id="g6" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#1c202a"/><stop offset="100%" stop-color="#07080b"/></radialGradient></defs><circle cx="60" cy="60" r="56" fill="url(#g6)" stroke="rgba(255,255,255,0.4)" stroke-width="2.5"/><polygon points="60,22 92,41 92,79 60,98 28,79 28,41" fill="none" stroke="#ffffff" stroke-width="5.5" stroke-linejoin="round"/><circle cx="60" cy="60" r="13" fill="#ffffff"/><circle cx="60" cy="60" r="5" fill="#0c0e14"/></svg>`
     }
   ];
 
@@ -43,7 +43,7 @@ window.CyberAvatars = (function() {
     svg: toUri(a.rawSvg)
   }));
 
-  const defaultAvatar = avatars[0].svg;
+  const defaultAvatar = avatars[3].svg; // Default para Lobo da Rede / Shogun (idêntico à imagem 2)
 
   return {
     list: avatars,

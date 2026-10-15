@@ -109,19 +109,20 @@ def get_or_create_lead(vulgo: str, avatar: str, ip: str = "127.0.0.1", user_agen
     vulgo = vulgo.strip()
     now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
 
-    cursor.execute("SELECT * FROM leads WHERE vulgo = ?", (vulgo,))
+    cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (vulgo,))
     row = cursor.fetchone()
 
     if row:
+        lead_vulgo = row["vulgo"]
         # Se usuário já existe, atualiza last_login e avatar (se fornecido novo)
         cursor.execute("""
             UPDATE leads 
             SET last_login = ?, ip_address = ?, user_agent = ?,
                 avatar = CASE WHEN ? != '' THEN ? ELSE avatar END
-            WHERE vulgo = ?
-        """, (now_str, ip, user_agent, avatar, avatar, vulgo))
+            WHERE id = ?
+        """, (now_str, ip, user_agent, avatar, avatar, row["id"]))
         conn.commit()
-        cursor.execute("SELECT * FROM leads WHERE vulgo = ?", (vulgo,))
+        cursor.execute("SELECT * FROM leads WHERE id = ?", (row["id"],))
         lead = dict(cursor.fetchone())
     else:
         cursor.execute("""
@@ -129,7 +130,7 @@ def get_or_create_lead(vulgo: str, avatar: str, ip: str = "127.0.0.1", user_agen
             VALUES (?, ?, 'lead', 'active', ?, ?, ?, ?, 0)
         """, (vulgo, avatar or "avatar1", now_str, now_str, ip, user_agent))
         conn.commit()
-        cursor.execute("SELECT * FROM leads WHERE vulgo = ?", (vulgo,))
+        cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (vulgo,))
         lead = dict(cursor.fetchone())
 
     conn.close()
@@ -138,7 +139,7 @@ def get_or_create_lead(vulgo: str, avatar: str, ip: str = "127.0.0.1", user_agen
 def get_lead_by_vulgo(vulgo: str):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM leads WHERE vulgo = ?", (vulgo.strip(),))
+    cursor.execute("SELECT * FROM leads WHERE vulgo = ? COLLATE NOCASE", (vulgo.strip(),))
     row = cursor.fetchone()
     conn.close()
     return dict(row) if row else None
@@ -178,7 +179,7 @@ def is_lead_blocked(vulgo: str) -> bool:
         return False
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT status FROM leads WHERE vulgo = ?", (vulgo.strip(),))
+    cursor.execute("SELECT status FROM leads WHERE vulgo = ? COLLATE NOCASE", (vulgo.strip(),))
     row = cursor.fetchone()
     conn.close()
     if row and row["status"] == "blocked":
