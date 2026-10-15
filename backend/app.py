@@ -126,6 +126,9 @@ class AIAnalyzePayload(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 @app.get("/api", response_class=HTMLResponse)
 @app.get("/api/", response_class=HTMLResponse)
+@app.get("/api/index.py", response_class=HTMLResponse)
+@app.get("/api/index", response_class=HTMLResponse)
+@app.api_route("/index.html", methods=["GET", "HEAD"], response_class=HTMLResponse)
 async def serve_index():
     index_file = os.path.join(TEMPLATES_DIR, "index.html")
     if not os.path.exists(index_file):
@@ -628,6 +631,8 @@ async def admin_toggle_token(token_id: int, auth: bool = Depends(verify_admin_au
 async def catch_all_spa(request: Request, full_path: str):
     if request.method == "OPTIONS":
         return Response(status_code=200, headers={"Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "*", "Access-Control-Allow-Headers": "*"})
+    if full_path in ["api/index.py", "api/index", "index.html"]:
+        return await serve_index()
     if full_path.startswith("api/"):
         return JSONResponse(status_code=404, content={"error": "NOT_FOUND", "detail": f"Rota de API não encontrada: /{full_path}"})
     if full_path.startswith("static/"):
