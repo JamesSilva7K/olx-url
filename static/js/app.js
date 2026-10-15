@@ -643,7 +643,7 @@
                 <span class="ad-price-tier-tag ${tierClass}">
                   ${a.price_badge || 'Preço Normal'}
                 </span>
-                ${a.is_top_deal ? `<span class="ad-top-deal-tag" title="Analisado como uma das melhores ofertas de compra/revenda">${a.deal_tag || 'MELHOR OFERTA 💎'}</span>` : ''}
+                ${a.is_top_deal ? `<span class="ad-top-deal-tag" title="Analisado como uma das melhores ofertas de compra/revenda"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:3px;"><polygon points="12 2 2 7 12 22 22 7 12 2"></polygon><polyline points="2 7 12 13 22 7"></polyline><line x1="12" y1="22" x2="12" y2="13"></line></svg>${a.deal_tag || 'MELHOR OFERTA'}</span>` : ''}
               </div>
               ${a.lead_category ? `<span class="ad-lead-tag ${a.lead_badge_class || 'lead-regular'}" title="Temperatura de Fechamento do Lead">${a.lead_category}</span>` : ''}
             </div>
@@ -652,7 +652,7 @@
           <div class="ad-card-body">
             <div class="ad-card-top-row">
               <span class="ad-card-id-code">ID: ${a.id || 'OLX'}</span>
-              ${a.lead_score ? `<span class="ad-lead-score-pill" title="Pontuação de Oportunidade do Lead">⚡ Lead ${a.lead_score}/100</span>` : ''}
+              ${a.lead_score ? `<span class="ad-lead-score-pill" title="Pontuação de Oportunidade do Lead"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:2px;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>Lead ${a.lead_score}/100</span>` : ''}
               ${a.diff_label ? `<span class="ad-card-diff-tag">${a.diff_label}</span>` : ''}
             </div>
 
@@ -685,7 +685,23 @@
               <div class="ad-meta-row ad-seller-badge-row">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 <span>Vendedor: <strong class="text-white">${a.seller_name || 'Vendedor Particular'}</strong> <span class="seller-rating-pill">${a.seller_score || '5.0'}</span></span>
-                ${a.is_new_seller ? `<span class="seller-newbie-pill" title="Conta sem histórico de vendas anteriores na OLX"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg> 0 VENDAS</span>` : ''}
+                ${(a.sales_completed === 0 || a.is_new_seller) ? `
+                  <span class="seller-newbie-pill" title="Vendedor recente com 0 vendas anteriores na OLX - Alta margem de negociação">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                    0 VENDAS (NOVO)
+                  </span>
+                ` : (a.sales_completed !== undefined && a.sales_completed !== null ? `
+                  <span class="seller-sales-pill" title="${a.sales_completed} vendas concluídas">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:2px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                    ${a.sales_completed} ${a.sales_completed === 1 ? 'venda' : 'vendas'}
+                  </span>
+                ` : '')}
+                ${a.active_ads_180d !== undefined && a.active_ads_180d <= 2 ? `
+                  <span class="seller-low-ads-pill" title="${a.active_ads_180d} anúncios ativos nos últimos 180 dias">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:2px;"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                    ${a.active_ads_180d} anúncio(s)
+                  </span>
+                ` : ''}
               </div>
             </div>
 
@@ -798,11 +814,11 @@
 
     if (redFlagsList) {
       if (rep.red_flags.length === 0) {
-        redFlagsList.innerHTML = `<div class="flag-item text-status-green">✓ Nenhuma anomalia crítica detectada.</div>`;
+        redFlagsList.innerHTML = `<div class="flag-item text-status-green"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:6px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Nenhuma anomalia crítica detectada.</div>`;
       } else {
         redFlagsList.innerHTML = rep.red_flags.map(f => `
           <div class="flag-item">
-            <span class="flag-bullet-red">✕</span>
+            <span class="flag-bullet-red"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span>
             <span>${f}</span>
           </div>
         `).join('');
@@ -812,7 +828,7 @@
     if (posFlagsList) {
       posFlagsList.innerHTML = rep.positive_flags.map(f => `
         <div class="flag-item">
-          <span class="flag-bullet-green">✓</span>
+          <span class="flag-bullet-green"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           <span>${f}</span>
         </div>
       `).join('');
@@ -960,7 +976,7 @@
                 </div>
                 <div class="script-text-box" id="script-text-content">${intel.negotiation_script}</div>
                 <div class="tactical-tip-box">
-                  <strong>💡 Dica Tática de Abordagem:</strong> ${intel.tactical_tip || ''}
+                  <strong><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline-block;vertical-align:middle;margin-right:4px;"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M12 2a7 7 0 0 0-7 7c0 2.5 1.5 4.5 3 6h8c1.5-1.5 3-3.5 3-6a7 7 0 0 0-7-7z"></path></svg>Dica Tática de Abordagem:</strong> ${intel.tactical_tip || ''}
                 </div>
               </div>
             `;
@@ -1236,7 +1252,7 @@
 
     const statusText = document.getElementById('upload-status-text');
     if (statusText) {
-      statusText.textContent = `✓ Foto carregada: ${fileName || 'avatar customizado'}`;
+      statusText.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-right:4px;"><polyline points="20 6 9 17 4 12"></polyline></svg>Foto carregada: ${fileName || 'avatar customizado'}`;
       statusText.classList.add('active');
     }
 
@@ -2302,7 +2318,7 @@
         if (t.remaining_credits === 0) {
           creditsDisplay = '<strong class="text-status-red">0 (Esgotado)</strong>';
         } else if (t.remaining_credits < 100) {
-          creditsDisplay = `<strong class="text-status-yellow">${t.remaining_credits} ⚠️</strong>`;
+          creditsDisplay = `<strong class="text-status-yellow">${t.remaining_credits} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline-block;vertical-align:middle;margin-left:2px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></strong>`;
         } else {
           creditsDisplay = `<strong class="text-status-green">${t.remaining_credits.toLocaleString('pt-BR')}</strong>`;
         }
@@ -3014,7 +3030,7 @@
         stepEl.className = i === 1 ? 'restoration-step-item active' : 'restoration-step-item pending';
       }
       if (iconEl) {
-        iconEl.innerHTML = i === 1 ? '<span class="cyber-spinner-sm"></span>' : '⏳';
+        iconEl.innerHTML = i === 1 ? '<span class="cyber-spinner-sm"></span>' : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
       }
     }
 

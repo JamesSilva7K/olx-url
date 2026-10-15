@@ -244,13 +244,13 @@ def analyze_lead_intelligence(ad: Dict[str, Any], market_stats: Optional[Dict[st
     if avg_price > 0 and price > 0:
         price_deviation_pct = round(((price - avg_price) / avg_price) * 100, 1)
         if price_deviation_pct <= -45:
-            price_verdict = f"Preço 🚨 {abs(price_deviation_pct)}% ABAIXO da média (Atenção redobrada a fraudes ou super desapego)"
+            price_verdict = f"Preço CRÍTICO {abs(price_deviation_pct)}% ABAIXO da média (Atenção redobrada a fraudes ou super desapego)"
         elif price_deviation_pct <= -15:
-            price_verdict = f"Preço ⚡ {abs(price_deviation_pct)}% abaixo da média (Excelente oportunidade de revenda/compra)"
+            price_verdict = f"Preço OPORTUNIDADE {abs(price_deviation_pct)}% abaixo da média (Excelente margem de revenda/compra)"
         elif price_deviation_pct >= 30:
-            price_verdict = f"Preço 📈 {price_deviation_pct}% acima da média (Margem alta para pedir desconto agressivo)"
+            price_verdict = f"Preço ELEVADO {price_deviation_pct}% acima da média (Margem alta para pedir desconto agressivo)"
         else:
-            price_verdict = f"Preço ⚖️ alinhado com a média de mercado (±{abs(price_deviation_pct)}%)"
+            price_verdict = f"Preço ALINHADO com a média de mercado (±{abs(price_deviation_pct)}%)"
 
     # 3. Análise Anti-Golpe e Fraudes
     risk_score = 10
@@ -299,16 +299,16 @@ def analyze_lead_intelligence(ad: Dict[str, Any], market_stats: Optional[Dict[st
     
     # Classificação
     if lead_score >= 80:
-        lead_category = "LEAD QUENTE 🔥"
+        lead_category = "LEAD QUENTE"
         lead_badge_class = "lead-hot"
     elif lead_score >= 60:
-        lead_category = "OPORTUNIDADE ⚡"
+        lead_category = "OPORTUNIDADE"
         lead_badge_class = "lead-opportunity"
     elif lead_score >= 40:
-        lead_category = "PROSPECTO REGULAR 📌"
+        lead_category = "PROSPECTO REGULAR"
         lead_badge_class = "lead-regular"
     else:
-        lead_category = "RISCO / CAUTELA ⚠️"
+        lead_category = "RISCO / CAUTELA"
         lead_badge_class = "lead-risk"
 
     # 5. Geração de Script de Negociação Inteligente
@@ -334,13 +334,13 @@ def analyze_lead_intelligence(ad: Dict[str, Any], market_stats: Optional[Dict[st
     if price > 0 and risk_score <= 35:
         if price_deviation_pct <= -25:
             is_top_deal = True
-            deal_tag = f"MELHOR OFERTA ({abs(int(price_deviation_pct))}% OFF) 💎"
+            deal_tag = f"MELHOR OFERTA ({abs(int(price_deviation_pct))}% OFF)"
         elif price_deviation_pct <= -15 and (urgency_score > 0 or contact_info.get("has_phone")):
             is_top_deal = True
-            deal_tag = "OPORTUNIDADE DE OURO 💎"
+            deal_tag = "OPORTUNIDADE DE OURO"
         elif urgency_score >= 40:
             is_top_deal = True
-            deal_tag = "URGÊNCIA DE VENDA ⚡"
+            deal_tag = "URGÊNCIA DE VENDA"
 
     return {
         "lead_score": lead_score,

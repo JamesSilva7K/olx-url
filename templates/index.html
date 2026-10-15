@@ -122,7 +122,8 @@
               <span class="ai-detector-keyword-matched" id="ai-detector-keyword-matched">(Geladeiras)</span>
             </div>
             <button type="button" class="ai-detector-undo-btn" id="ai-detector-undo-btn" title="Desfazer e voltar para Todas as Categorias">
-              ✕ Desfazer
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <span>Desfazer</span>
             </button>
           </div>
 
@@ -277,7 +278,7 @@
                       </svg>
                     </div>
                     <div class="card-badges-group">
-                      <span class="badge-cyber-recommended">★ RECOMENDADO</span>
+                      <span class="badge-cyber-recommended"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>RECOMENDADO</span>
                       <span class="badge-cyber-rate" id="badge-mining-rate">+85% TAXA DE WHATSAPP</span>
                     </div>
                     <!-- Switch 3D Futurista -->
@@ -477,7 +478,9 @@
             <div class="quick-search-box">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input type="text" id="quick-filter-input" class="quick-filter-input" placeholder="Filtrar por modelo, memória, detalhe ou palavra-chave nestes anúncios...">
-              <button type="button" id="quick-filter-clear-btn" class="quick-clear-btn hidden" title="Limpar filtro">✕</button>
+              <button type="button" id="quick-filter-clear-btn" class="quick-clear-btn hidden" title="Limpar filtro">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
             </div>
 
             <div class="quick-sort-wrap">
@@ -769,7 +772,10 @@
           <button class="admin-subnav-btn" data-sub="filtros">Estatísticas de Filtros</button>
           <button class="admin-subnav-btn" data-sub="blindagem">Central de Blindagem & Firewall</button>
           <button class="admin-subnav-btn" data-sub="tokens">Pool de Tokens API</button>
-          <button class="admin-subnav-btn text-status-red" data-sub="reset" id="admin-subnav-reset-btn">🚨 Reiniciar Sistema</button>
+          <button class="admin-subnav-btn text-status-red flex items-center gap-2" data-sub="reset" id="admin-subnav-reset-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>Reiniciar Sistema</span>
+          </button>
         </div>
 
         <!-- Subtab 1: Leads Sincronizados -->
@@ -975,7 +981,9 @@
     <div class="cyber-modal-content">
       <div class="modal-header">
         <h3 class="modal-title" id="profile-modal-title">Identificação do Lead</h3>
-        <button class="modal-close-btn" id="profile-modal-close" onclick="window.closeProfileModal ? window.closeProfileModal() : null" title="Fechar">✕</button>
+        <button class="modal-close-btn" id="profile-modal-close" onclick="window.closeProfileModal ? window.closeProfileModal() : null" title="Fechar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
 
       <div class="modal-center-preview">
@@ -1018,7 +1026,9 @@
     <div class="cyber-modal-content modal-admin-auth">
       <div class="modal-header">
         <h3 class="modal-title">Acesso Supremo</h3>
-        <button class="modal-close-btn" id="admin-auth-modal-close" onclick="window.closeAdminAuthModal ? window.closeAdminAuthModal() : null" title="Fechar">✕</button>
+        <button class="modal-close-btn" id="admin-auth-modal-close" onclick="window.closeAdminAuthModal ? window.closeAdminAuthModal() : null" title="Fechar">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
 
       <div class="modal-center-preview">
@@ -1073,7 +1083,9 @@
               <strong class="step-title">Purga de Dados de Teste & Histórico OLX</strong>
               <small class="step-desc">Excluindo registros de puxadas, termos e consultas de teste...</small>
             </div>
-            <span class="step-status-icon" id="r-icon-2">⏳</span>
+            <span class="step-status-icon" id="r-icon-2">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
           </div>
 
           <div class="restoration-step-item pending" id="r-step-3">
@@ -1082,7 +1094,9 @@
               <strong class="step-title">Higienização de Logs e Métricas de Auditoria</strong>
               <small class="step-desc">Zerando contadores de leads e arquivando logs anteriores...</small>
             </div>
-            <span class="step-status-icon" id="r-icon-3">⏳</span>
+            <span class="step-status-icon" id="r-icon-3">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
           </div>
 
           <div class="restoration-step-item pending" id="r-step-4">
@@ -1091,7 +1105,9 @@
               <strong class="step-title">Compactação e Reindexação Física (VACUUM)</strong>
               <small class="step-desc">Otimizando tabelas SQLite e liberando espaço em disco...</small>
             </div>
-            <span class="step-status-icon" id="r-icon-4">⏳</span>
+            <span class="step-status-icon" id="r-icon-4">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
           </div>
 
           <div class="restoration-step-item pending" id="r-step-5">
@@ -1100,7 +1116,9 @@
               <strong class="step-title">Esvaziamento de Memória Volátil & Firewall</strong>
               <small class="step-desc">Zerando baldes de rate limit DDoS e limpando cache em RAM...</small>
             </div>
-            <span class="step-status-icon" id="r-icon-5">⏳</span>
+            <span class="step-status-icon" id="r-icon-5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
           </div>
 
           <div class="restoration-step-item pending" id="r-step-6">
@@ -1109,7 +1127,9 @@
               <strong class="step-title">Reinicialização Concluída com Sucesso</strong>
               <small class="step-desc">Ambiente 100% puro e restaurado para produção real.</small>
             </div>
-            <span class="step-status-icon" id="r-icon-6">⏳</span>
+            <span class="step-status-icon" id="r-icon-6">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            </span>
           </div>
         </div>
 
@@ -1143,7 +1163,9 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
           Reiniciar & Limpar Sistema
         </h3>
-        <button class="modal-close-btn" onclick="window.closeSystemResetModal()">✕</button>
+        <button class="modal-close-btn" onclick="window.closeSystemResetModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
       <div class="p-4">
         <p class="text-secondary text-sm mb-4">

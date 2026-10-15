@@ -539,7 +539,7 @@ def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: floa
             intel = analyze_lead_intelligence(a, market_stats=stats)
             a["lead_intel"] = intel
             a["lead_score"] = intel.get("lead_score", 50)
-            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
+            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR")
             a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
             a["is_top_deal"] = intel.get("is_top_deal", False)
             a["deal_tag"] = intel.get("deal_tag", "")
@@ -689,12 +689,13 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                     if "loja" in htxt or "pro" in htxt or "profissional" in htxt:
                         is_pro_seller = True
 
-                # Marca se é vendedor novo com 0 vendas
-                if sales_completed == 0 and not is_pro_seller:
-                    ad_item["is_new_seller"] = True
+                # Guarda dados do vendedor para sincronização com o card e métricas
+                ad_item["sales_completed"] = sales_completed
+                ad_item["active_ads_180d"] = active_ads_180d
+                ad_item["is_new_seller"] = (sales_completed == 0 and not is_pro_seller)
 
                 if only_new_sellers:
-                    # Descartar se já fez vendas anteriores
+                    # Descartar se já fez vendas anteriores ou for lojista
                     if sales_completed > 0 or is_pro_seller:
                         ad_item["_discard"] = True
                     # Descartar se exceder o limite de anúncios dos últimos 180 dias
@@ -764,7 +765,7 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             intel = analyze_lead_intelligence(a, market_stats=stats)
             a["lead_intel"] = intel
             a["lead_score"] = intel.get("lead_score", 50)
-            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR 📌")
+            a["lead_category"] = intel.get("lead_category", "PROSPECTO REGULAR")
             a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
             a["is_top_deal"] = intel.get("is_top_deal", False)
             a["deal_tag"] = intel.get("deal_tag", "")
@@ -1027,7 +1028,7 @@ def validate_single_ad(ad_url: str):
         "completed_sales": "0",
         "cancelled_sales": "0",
         "is_pro": False,
-        "rating": "5.0 ★",
+        "rating": "5.0",
         "tempo_despacho": "",
         "user_since": ""
     }
