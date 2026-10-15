@@ -2418,6 +2418,40 @@
       });
     }
 
+    // Adicionar chave ScraperAPI individual ao pool
+    const addTokenBtn = document.getElementById('admin-add-token-btn');
+    const addTokenInput = document.getElementById('admin-new-token-input');
+    if (addTokenBtn && addTokenInput) {
+      addTokenBtn.addEventListener('click', async () => {
+        const tokenVal = addTokenInput.value.trim();
+        if (!tokenVal || !state.adminToken) {
+          CyberShield.showToast("Insira a chave da ScraperAPI.", "error");
+          return;
+        }
+        CyberShield.showToast("Adicionando chave ao pool...", "info");
+        try {
+          const res = await fetch('/api/admin/tokens', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.adminToken}`
+            },
+            body: JSON.stringify({ token: tokenVal, service: 'scraperapi' })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            CyberShield.showToast("Chave ScraperAPI adicionada ao pool com sucesso!", "success");
+            addTokenInput.value = '';
+            loadAdminData();
+          } else {
+            CyberShield.showToast(data.detail || "Erro ao adicionar token.", "error");
+          }
+        } catch (e) {
+          CyberShield.showToast("Erro ao conectar ao servidor.", "error");
+        }
+      });
+    }
+
     // Adicionar lista de tokens em massa (Bulk)
     const addBulkBtn = document.getElementById('admin-add-bulk-tokens-btn');
     const bulkInput = document.getElementById('admin-bulk-tokens-input');
