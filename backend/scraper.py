@@ -191,12 +191,23 @@ def fetch_olx_html(target_url: str) -> str:
     timeout_direct = 6 if is_serverless else 12
     timeout_scraperapi = 10 if is_serverless else 22
 
+    def is_valid_olx_html(content: str) -> bool:
+        if not content or len(content) < 500:
+            return False
+        # Válido se for listagem de anúncios
+        if "olx-adcard" in content or "adcard" in content or "__NEXT_DATA__" in content:
+            return True
+        # Válido se for página de anúncio individual (ex: /sofas-e-poltronas/lindo-sofa-retratil-suede)
+        if ("schema.org" in content or "olx.com.br" in content) and ("<h1" in content or "description" in content.lower()):
+            return True
+        return False
+
     # Método 1 (Primário): CloudScraper nativo para bypass da OLX
     try:
         import cloudscraper
         scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'linux' if is_serverless else 'windows', 'desktop': True})
         cs_resp = scraper.get(target_url, timeout=timeout_cs)
-        if cs_resp.status_code == 200 and ("olx-adcard" in cs_resp.text or "__NEXT_DATA__" in cs_resp.text or "adcard" in cs_resp.text):
+        if cs_resp.status_code == 200 and is_valid_olx_html(cs_resp.text):
             HTML_CACHE[target_url] = (now, cs_resp.text)
             return cs_resp.text
     except Exception as cs_err:
@@ -218,7 +229,7 @@ def fetch_olx_html(target_url: str) -> str:
             "Upgrade-Insecure-Requests": "1"
         }
         direct_resp = requests.get(target_url, headers=direct_headers, timeout=timeout_direct)
-        if direct_resp.status_code == 200 and ("olx-adcard" in direct_resp.text or "adcard" in direct_resp.text or "__NEXT_DATA__" in direct_resp.text):
+        if direct_resp.status_code == 200 and is_valid_olx_html(direct_resp.text):
             HTML_CACHE[target_url] = (now, direct_resp.text)
             return direct_resp.text
     except Exception:
@@ -846,6 +857,11 @@ def validate_single_ad(ad_url: str):
     html = fetch_olx_html(ad_url)
     soup = BeautifulSoup(html, "html.parser")
 
+    # Verifica se o anúncio foi desativado/apagado pela OLX e redirecionou para a home
+    page_title_tag = soup.find("title")
+    page_title_text = page_title_tag.get_text(strip=True) if page_title_tag else ""
+    is_home_redirect = "maior site de compra e venda" in page_title_text.lower() or "olx brasil" in page_title_text.lower() and not soup.find("h1")
+
     # Extrai dados estruturados JSON-LD
     product_data = None
     breadcrumbs = []
@@ -860,6 +876,9 @@ def validate_single_ad(ad_url: str):
                     breadcrumbs = [it.get("item", {}).get("name", "") for it in items if isinstance(it, dict)]
         except Exception:
             continue
+
+    if is_home_redirect and not product_data:
+        raise ValueError("Este anúncio foi finalizado, vendido ou excluído pelo anunciante na OLX Brasil (a OLX redirecionou para a página inicial). Tente validar um anúncio ativo com o código numérico no final da URL.")
 
     # Título
     title = ""
