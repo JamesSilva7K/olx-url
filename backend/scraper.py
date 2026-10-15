@@ -335,8 +335,7 @@ def clean_and_structure_olx_description(raw_desc: str) -> str:
     structured = "\n".join(filtered_lines).strip()
     return structured or raw_desc.strip()
 
-def parse_search_ads(html_content: str, sort_by: str = "recent"):
-
+def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: float = None, max_price: float = None):
     """Extrai os anúncios reais da página da OLX Brasil ordenados do mais recente para o mais antigo por padrão."""
     soup = BeautifulSoup(html_content, "html.parser")
     ads = []
@@ -442,6 +441,14 @@ def parse_search_ads(html_content: str, sort_by: str = "recent"):
             # Timestamp para ordenação cronológica precisa (mais recentes primeiro)
             date_ts = parse_olx_date(date_str)
 
+            # Validação estrita de Preço Mínimo e Máximo
+            if min_price is not None and min_price > 0:
+                if price_val > 0 and price_val < min_price:
+                    continue
+            if max_price is not None and max_price > 0:
+                if price_val > 0 and price_val > max_price:
+                    continue
+
             ads.append({
                 "id": ad_id,
                 "title": title,
@@ -532,7 +539,8 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
     - Extração profunda de descrições completas e telefones/WhatsApp via ThreadPool
     """
     is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-    max_p = 2 if is_serverless else 30
+    # No Vercel sem streaming, até 3 páginas conseguem responder no timeout; em localhost, respeita até 30 páginas completas
+    max_p = 3 if is_serverless else 30
     clamped_pages = max(1, min(max_p, int(pages or 1)))
     all_ads = []
     seen_ids = set()
@@ -549,7 +557,7 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
         )
         try:
             html = fetch_olx_html(target_url)
-            page_ads, _ = parse_search_ads(html)
+            page_ads, _ = parse_search_ads(html, sort_by=sort_by, min_price=min_price, max_price=max_price)
             if not page_ads:
                 break
 
@@ -558,6 +566,14 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
                     continue
                 if a["id"]:
                     seen_ids.add(a["id"])
+
+                # Validação e Corte Estrito de Preço Mínimo e Máximo (Regra de Negócio)
+                if min_price is not None and min_price > 0:
+                    if a["price"] > 0 and a["price"] < min_price:
+                        continue
+                if max_price is not None and max_price > 0:
+                    if a["price"] > 0 and a["price"] > max_price:
+                        continue
 
                 # Filtro prévio: descarta contas profissionais e lojas
                 if only_new_sellers:
@@ -653,7 +669,19 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
         with ThreadPoolExecutor(max_workers=6 if is_serverless else 8) as executor:
             list(executor.map(enrich_ad, target_sub_ads))
 
-        if only_new_sellers:
+        # Filtragem Rigorosa de Leads Conforme Seleções do Usuário:
+        if fetch_full_descriptions and only_new_sellers:
+            # Ambas as opções ativas: precisa ter WhatsApp E ser vendedor novo/poucas vendas
+            all_ads = [a for a in target_sub_ads if not a.get("_discard") and a.get("contact") and a["contact"].get("has_phone")]
+            # Se a amostragem com ambos foi estrita e vazia, prioriza quem atende a pelo menos uma das metas comprovadas
+            if not all_ads:
+                all_ads = [a for a in target_sub_ads if not a.get("_discard") and (a.get("contact", {}).get("has_phone") or a.get("is_new_seller"))]
+        elif fetch_full_descriptions:
+            # Somente WhatsApp ativo: filtra estritamente quem possui contato extraído
+            wpp_ads = [a for a in target_sub_ads if a.get("contact") and a["contact"].get("has_phone")]
+            all_ads = wpp_ads if wpp_ads else target_sub_ads
+        elif only_new_sellers:
+            # Somente vendedores novos ativo: remove descartados
             all_ads = [a for a in all_ads if not a.get("_discard")]
 
 

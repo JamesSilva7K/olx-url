@@ -267,6 +267,26 @@
     Scanner3D.show(loadingMsg);
     CyberShield.playSound('click');
 
+    function parsePriceInput(val) {
+      if (!val) return null;
+      let s = String(val).trim().replace(/[^\d,\.]/g, '');
+      if (!s) return null;
+      if (s.includes('.') && s.includes(',')) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (s.includes(',')) {
+        s = s.replace(',', '.');
+      } else if (s.includes('.')) {
+        const parts = s.split('.');
+        if (parts[parts.length - 1].length === 2) {
+          s = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+        } else {
+          s = parts.join('');
+        }
+      }
+      const num = parseFloat(s);
+      return isNaN(num) ? null : num;
+    }
+
     try {
       const res = await apiFetch('/api/search', {
         method: 'POST',
@@ -275,8 +295,8 @@
           keyword: keyword || "",
           state_uf: uf || state.selectedState || "BR",
           category_id: category || state.selectedCategory || "todas",
-          min_price: minPrice ? parseFloat(minPrice) : null,
-          max_price: maxPrice ? parseFloat(maxPrice) : null,
+          min_price: parsePriceInput(minPrice),
+          max_price: parsePriceInput(maxPrice),
           sort_by: sortBy || state.selectedSort || "relevance",
           pages: pagesNum,
           fetch_full_descriptions: !!fetchFullDescriptions,
@@ -1532,10 +1552,19 @@
       }
     });
 
-    // Sincroniza quando o usuário digita no input numérico de preço máximo
+    // Sincroniza quando o usuário digita no input de preço máximo
     if (maxInput) {
       maxInput.addEventListener('input', () => {
-        const val = parseFloat(maxInput.value) || 0;
+        let raw = maxInput.value.trim().replace(/[^\d,\.]/g, '');
+        let clean = raw;
+        if (clean.includes('.') && clean.includes(',')) clean = clean.replace(/\./g, '').replace(',', '.');
+        else if (clean.includes(',')) clean = clean.replace(',', '.');
+        else if (clean.includes('.')) {
+          const parts = clean.split('.');
+          if (parts[parts.length - 1].length === 2) clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+          else clean = parts.join('');
+        }
+        const val = parseFloat(clean) || 0;
         const clamped = Math.min(50000, Math.max(0, val));
         slider.value = clamped;
         updateSliderVisuals(clamped);

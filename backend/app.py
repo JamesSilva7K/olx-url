@@ -402,7 +402,12 @@ async def search_olx(request: Request, payload: Optional[SearchPayload] = None, 
             )
         else:
             html = fetch_olx_html(target_url)
-            ads, stats = parse_search_ads(html, sort_by=payload.sort_by or "recent")
+            ads, stats = parse_search_ads(
+                html,
+                sort_by=payload.sort_by or "recent",
+                min_price=payload.min_price,
+                max_price=payload.max_price
+            )
 
         # Registra a puxada no histórico para auditoria do Admin Supremo
         lead_id = lead["id"] if lead else None
