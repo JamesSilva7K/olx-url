@@ -5480,3 +5480,289 @@ body.theme-white .theme-toggle-btn:hover {
     width: 100%;
   }
 }
+
+/* ==========================================================================
+   NEIGHBORHOOD INTELLIGENCE & AUTO-SUGGESTION SYSTEM (NOBRES VS POPULARES)
+   ========================================================================== */
+.neighborhood-feature-group {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.neighborhood-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.neighborhood-auto-toggle-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.cyber-btn-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-pill);
+  color: #a0aec0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  letter-spacing: 0.02em;
+}
+
+.cyber-btn-mini:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.cyber-btn-mini.active {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.2);
+}
+
+.cyber-btn-mini .sparkle-icon {
+  font-size: 0.8rem;
+  display: inline-block;
+  animation: miniPulse 2s infinite ease-in-out;
+}
+
+@keyframes miniPulse {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.neighborhood-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.neighborhood-input-wrapper input {
+  width: 100%;
+  padding-right: 2.2rem;
+}
+
+.neighborhood-clear-btn {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #cbd5e0;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.neighborhood-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
+  color: #ef4444;
+}
+
+/* Tier Selector (Nobres vs Populares) */
+.neighborhood-tier-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+
+.tier-pill-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(20, 24, 33, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  color: #a0aec0;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  text-align: left;
+}
+
+.tier-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.tier-pill-btn.active[data-tier="nobre"] {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(20, 24, 33, 0.9) 100%);
+  border-color: rgba(234, 179, 8, 0.55);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(234, 179, 8, 0.12);
+}
+
+.tier-pill-btn.active[data-tier="popular"] {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(20, 24, 33, 0.9) 100%);
+  border-color: rgba(59, 130, 246, 0.55);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.12);
+}
+
+.tier-pill-btn .tier-icon {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.tier-pill-btn .tier-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tier-pill-btn .tier-tag {
+  font-size: 0.65rem;
+  color: #718096;
+}
+
+.tier-pill-btn.active .tier-tag {
+  color: #cbd5e0;
+}
+
+/* Sugestões de Bairros Chips */
+.neighborhood-suggestions-container {
+  background: rgba(10, 12, 18, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.suggestions-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: #718096;
+}
+
+.suggestions-title {
+  font-weight: 600;
+  color: #a0aec0;
+}
+
+.suggestions-title #current-uf-badge {
+  color: #3b82f6;
+  font-weight: 700;
+}
+
+.selection-mode-indicator {
+  font-size: 0.65rem;
+  color: #10b981;
+  font-weight: 600;
+}
+
+.selection-mode-indicator.manual {
+  color: #f59e0b;
+}
+
+.neighborhood-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-height: 140px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.neighborhood-chips-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.neighborhood-chips-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+
+.neighborhood-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.28rem 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  color: #cbd5e0;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.neighborhood-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.neighborhood-chip.selected {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #10b981;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.neighborhood-chip.best-choice {
+  border-color: rgba(234, 179, 8, 0.6);
+}
+
+.neighborhood-chip.best-choice.selected {
+  background: rgba(234, 179, 8, 0.2);
+  border-color: rgba(234, 179, 8, 0.75);
+  color: #fbbf24;
+  box-shadow: 0 0 12px rgba(234, 179, 8, 0.3);
+}
+
+.neighborhood-chip .chip-badge {
+  font-size: 0.62rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #a0aec0;
+  font-weight: 700;
+}
+
+.neighborhood-chip.best-choice .chip-badge {
+  background: rgba(234, 179, 8, 0.25);
+  color: #fbbf24;
+}
+
+.neighborhood-chip.selected .chip-badge {
+  background: rgba(16, 185, 129, 0.25);
+  color: #34d399;
+}
+
+.empty-neighborhood-msg {
+  font-size: 0.72rem;
+  color: #718096;
+  font-style: italic;
+  padding: 0.3rem 0;
+}

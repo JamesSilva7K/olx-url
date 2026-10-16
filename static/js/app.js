@@ -13,6 +13,9 @@
     selectedState: 'BR',
     selectedCity: '',
     selectedNeighborhood: '',
+    neighborhoodTier: 'nobre', // 'nobre' | 'popular'
+    neighborhoodAutoMode: true, // auto-select top neighborhood
+    neighborhoodsData: {},
     selectedCategory: 'todas',
     selectedSort: 'recent',
     dropdowns: {},
@@ -172,7 +175,9 @@
           state.states = data.states;
           state.cities = data.cities || {};
           state.categories = data.categories;
+          state.neighborhoodsData = data.neighborhoods || {};
           renderDropdowns(state.states, state.categories, state.cities);
+          updateNeighborhoodSuggestions();
         }
       }
     } catch (e) {
@@ -230,6 +235,7 @@
       onChange: (val) => {
         state.selectedState = val;
         updateCityDropdown(val);
+        updateNeighborhoodSuggestions();
       }
     });
 
@@ -2719,7 +2725,171 @@
       });
     }
 
+    // ========================================================================
+    // CONTROLADOR DE INTELIGÊNCIA DE BAIRROS (NOBRES VS POPULARES & AUTO ESCOLHA)
+    // ========================================================================
+    const btnAutoNeighborhood = document.getElementById('btn-neighborhood-auto');
+    const btnClearNeighborhood = document.getElementById('btn-clear-neighborhood');
+    const tierPills = document.querySelectorAll('.tier-pill-btn');
+    const chipsList = document.getElementById('neighborhood-chips-list');
+    const ufBadge = document.getElementById('current-uf-badge');
+    const selectionModeLabel = document.getElementById('selection-mode-label');
+
+    // Função global acessível no escopo para atualizar as sugestões de bairros
+    window.updateNeighborhoodSuggestions = function() {
+      const activeUf = (state.selectedState && state.selectedState !== 'BR') ? state.selectedState : 'SP';
+      if (ufBadge) ufBadge.textContent = activeUf;
+
+      const neighborhoodsObj = state.neighborhoodsData || {};
+      const targetTier = state.neighborhoodTier || 'nobre';
+
+      // Filtra bairros para a UF selecionada e para o perfil (nobre vs popular)
+      const matchingEntries = Object.entries(neighborhoodsObj).filter(([name, data]) => {
+        return (!data.uf || data.uf === activeUf) && (data.tier === targetTier);
+      });
+
+      if (!chipsList) return;
+      chipsList.innerHTML = '';
+
+      if (matchingEntries.length === 0) {
+        // Fallback genérico para estados sem mapeamento exato
+        chipsList.innerHTML = `<span class="empty-neighborhood-msg">Sem sugestões pré-cadastradas para ${activeUf}. Digite manualmente o bairro desejado acima.</span>`;
+        return;
+      }
+
+      // Ordena: os melhores da classe no topo (Classe A++ ou Classe C/D de alto giro)
+      const sortedEntries = matchingEntries.sort((a, b) => {
+        const classeA = a[1].classe || '';
+        const classeB = b[1].classe || '';
+        return classeB.localeCompare(classeA);
+      });
+
+      // Se o modo automático estiver ativo, seleciona automaticamente a 1ª opção (melhor opção)
+      let bestItem = sortedEntries[0];
+      if (state.neighborhoodAutoMode && bestItem) {
+        const bestFormatted = bestItem[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        if (neighborhoodInput) {
+          neighborhoodInput.value = bestFormatted;
+          state.selectedNeighborhood = bestFormatted;
+        }
+        if (btnClearNeighborhood) btnClearNeighborhood.style.display = 'inline-flex';
+        if (selectionModeLabel) {
+          selectionModeLabel.textContent = `✨ Melhor Escolha Auto: ${bestFormatted}`;
+          selectionModeLabel.className = 'selection-mode-indicator';
+        }
+      }
+
+      // Renderiza as chips
+      sortedEntries.forEach(([rawName, data], index) => {
+        const displayName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        const isBest = (index === 0);
+        const isSelected = (neighborhoodInput && neighborhoodInput.value.trim().toLowerCase() === rawName.toLowerCase());
+
+        chip.className = `neighborhood-chip ${isBest ? 'best-choice' : ''} ${isSelected ? 'selected' : ''}`;
+        chip.innerHTML = `
+          <span>${displayName}</span>
+          <span class="chip-badge">${isBest ? 'Top 1' : data.classe}</span>
+        `;
+        chip.title = `${data.perfil || ''} • Renda: ${data.renda_media || ''} • Segurança: ${data.seguranca || ''}`;
+
+        chip.addEventListener('click', () => {
+          // Clique manual pelo lead
+          state.neighborhoodAutoMode = false;
+          if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
+          if (selectionModeLabel) {
+            selectionModeLabel.textContent = `🎯 Escolha Manual: ${displayName}`;
+            selectionModeLabel.className = 'selection-mode-indicator manual';
+          }
+          if (neighborhoodInput) {
+            neighborhoodInput.value = displayName;
+            state.selectedNeighborhood = displayName;
+          }
+          if (btnClearNeighborhood) btnClearNeighborhood.style.display = 'inline-flex';
+
+          // Atualiza classes dos chips
+          document.querySelectorAll('.neighborhood-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
+
+          if (typeof showCyberToast === 'function') {
+            showCyberToast(`Bairro ${displayName} selecionado manualmente!`, 'info');
+          }
+        });
+
+        chipsList.appendChild(chip);
+      });
+    };
+
+    // Botão Modo Automático / Melhor Escolha
+    if (btnAutoNeighborhood) {
+      btnAutoNeighborhood.addEventListener('click', () => {
+        state.neighborhoodAutoMode = !state.neighborhoodAutoMode;
+        btnAutoNeighborhood.classList.toggle('active', state.neighborhoodAutoMode);
+        
+        if (state.neighborhoodAutoMode) {
+          if (typeof showCyberToast === 'function') {
+            showCyberToast("Modo Automático: A melhor escolha de bairro é definida automaticamente!", "success");
+          }
+          window.updateNeighborhoodSuggestions();
+        } else {
+          if (selectionModeLabel) {
+            selectionModeLabel.textContent = "🖐️ Escolha Manual do Lead";
+            selectionModeLabel.className = 'selection-mode-indicator manual';
+          }
+        }
+      });
+    }
+
+    // Toggle Nobres vs Populares
+    tierPills.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tierPills.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        state.neighborhoodTier = btn.dataset.tier || 'nobre';
+        window.updateNeighborhoodSuggestions();
+      });
+    });
+
+    // Limpar Bairro
+    if (btnClearNeighborhood) {
+      btnClearNeighborhood.addEventListener('click', () => {
+        if (neighborhoodInput) neighborhoodInput.value = '';
+        state.selectedNeighborhood = '';
+        state.neighborhoodAutoMode = false;
+        if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
+        if (selectionModeLabel) {
+          selectionModeLabel.textContent = "Filtro de bairro limpo";
+          selectionModeLabel.className = 'selection-mode-indicator manual';
+        }
+        btnClearNeighborhood.style.display = 'none';
+        document.querySelectorAll('.neighborhood-chip').forEach(c => c.classList.remove('selected'));
+      });
+    }
+
     if (neighborhoodInput) {
+      neighborhoodInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        state.selectedNeighborhood = val;
+        if (btnClearNeighborhood) {
+          btnClearNeighborhood.style.display = val ? 'inline-flex' : 'none';
+        }
+        // Se usuário digitou manualmente algo diferente, desativa o modo auto
+        if (state.neighborhoodAutoMode && val.length > 0) {
+          state.neighborhoodAutoMode = false;
+          if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
+          if (selectionModeLabel) {
+            selectionModeLabel.textContent = "✍️ Digitado pelo Lead";
+            selectionModeLabel.className = 'selection-mode-indicator manual';
+          }
+        }
+        // Destaca chip se coincidir
+        document.querySelectorAll('.neighborhood-chip').forEach(c => {
+          const chipName = c.querySelector('span')?.textContent?.toLowerCase() || '';
+          c.classList.toggle('selected', chipName === val.toLowerCase());
+        });
+      });
+
       neighborhoodInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') triggerSearch();
       });

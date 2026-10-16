@@ -148,42 +148,63 @@ BRAZILIAN_CITIES = {
     ]
 }
 
-# Base de Inteligência Socioeconômica & Rendas de Bairros (Brasil)
+# Base de Inteligência Socioeconômica & Rendas de Bairros (Brasil - Nobres e Populares)
 NEIGHBORHOOD_SOCIO_DATA = {
-    # São Paulo / Capital
-    "moema": {"renda_media": "R$ 14.500 - R$ 26.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Região Nobre • Excelente para negociações presenciais e produtos premium"},
-    "vila mariana": {"renda_media": "R$ 9.800 - R$ 18.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Bairro tradicional de classe média-alta • Ótima liquidez"},
-    "pinheiros": {"renda_media": "R$ 12.000 - R$ 22.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Polo comercial e corporativo • Alto poder aquisitivo"},
-    "perdizes": {"renda_media": "R$ 11.500 - R$ 20.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Zona Oeste nobre • Vendedores particulares qualificados"},
-    "jardins": {"renda_media": "R$ 22.000 - R$ 45.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Área de altíssima renda • Vendas rápidas sem barganha extrema"},
-    "morumbi": {"renda_media": "R$ 13.000 - R$ 28.000", "classe": "Classe A", "seguranca": "Média/Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios fechados • Itens de alto valor agregado"},
-    "itaim bibi": {"renda_media": "R$ 18.000 - R$ 35.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Centro financeiro e tecnológico • Negociações ágeis"},
-    "tatuapé": {"renda_media": "R$ 7.500 - R$ 14.000", "classe": "Classe B+/A", "seguranca": "Média/Alta", "poder_compra": "Alto", "perfil": "Polo forte da Zona Leste • Excelente fluxo de compradores"},
-    "santana": {"renda_media": "R$ 6.200 - R$ 12.000", "classe": "Classe B+", "seguranca": "Média", "poder_compra": "Médio/Alto", "perfil": "Centro comercial da Zona Norte • Boa rotatividade"},
-    "bela vista": {"renda_media": "R$ 5.500 - R$ 10.500", "classe": "Classe B", "seguranca": "Média", "poder_compra": "Médio", "perfil": "Região central universitária e hospitalar • Fácil acesso"},
+    # São Paulo / Capital - Nobres (Classe A / A+)
+    "moema": {"renda_media": "R$ 14.500 - R$ 26.000", "classe": "Classe A+", "tier": "nobre", "uf": "SP", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Região Nobre • Excelente para negociações presenciais e produtos premium"},
+    "vila mariana": {"renda_media": "R$ 9.800 - R$ 18.000", "classe": "Classe A", "tier": "nobre", "uf": "SP", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Bairro tradicional de classe média-alta • Ótima liquidez"},
+    "pinheiros": {"renda_media": "R$ 12.000 - R$ 22.000", "classe": "Classe A+", "tier": "nobre", "uf": "SP", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Polo comercial e corporativo • Alto poder aquisitivo"},
+    "perdizes": {"renda_media": "R$ 11.500 - R$ 20.000", "classe": "Classe A", "tier": "nobre", "uf": "SP", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Zona Oeste nobre • Vendedores particulares qualificados"},
+    "jardins": {"renda_media": "R$ 22.000 - R$ 45.000+", "classe": "Classe A++", "tier": "nobre", "uf": "SP", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Área de altíssima renda • Vendas rápidas sem barganha extrema"},
+    "morumbi": {"renda_media": "R$ 13.000 - R$ 28.000", "classe": "Classe A", "tier": "nobre", "uf": "SP", "seguranca": "Média/Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios fechados • Itens de alto valor agregado"},
+    "itaim bibi": {"renda_media": "R$ 18.000 - R$ 35.000", "classe": "Classe A++", "tier": "nobre", "uf": "SP", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Centro financeiro e tecnológico • Negociações ágeis"},
+    "tatuapé": {"renda_media": "R$ 7.500 - R$ 14.000", "classe": "Classe B+/A", "tier": "nobre", "uf": "SP", "seguranca": "Média/Alta", "poder_compra": "Alto", "perfil": "Polo forte da Zona Leste • Excelente fluxo de compradores"},
+    "santana": {"renda_media": "R$ 6.200 - R$ 12.000", "classe": "Classe B+", "tier": "nobre", "uf": "SP", "seguranca": "Média", "poder_compra": "Médio/Alto", "perfil": "Centro comercial da Zona Norte • Boa rotatividade"},
+    "bela vista": {"renda_media": "R$ 5.500 - R$ 10.500", "classe": "Classe B", "tier": "nobre", "uf": "SP", "seguranca": "Média", "poder_compra": "Médio", "perfil": "Região central universitária e hospitalar • Fácil acesso"},
 
-    # Rio de Janeiro
-    "copacabana": {"renda_media": "R$ 8.500 - R$ 16.000", "classe": "Classe A/B+", "seguranca": "Média", "poder_compra": "Alto", "perfil": "Zona Sul densa • Negociação fácil em locais públicos"},
-    "ipanema": {"renda_media": "R$ 18.000 - R$ 38.000", "classe": "Classe A++", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Zona Sul nobre • Vendedores exigentes e desapegos de luxo"},
-    "leblon": {"renda_media": "R$ 22.000 - R$ 48.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior m² do Brasil • Compradores de altíssima renda"},
-    "barra da tijuca": {"renda_media": "R$ 12.000 - R$ 25.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios e shoppings • Preferência por retirada em shoppings"},
-    "botafogo": {"renda_media": "R$ 9.000 - R$ 17.500", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Polo jovem e corporativo • Fácil logística e metrô"},
-    "tijuca": {"renda_media": "R$ 5.800 - R$ 11.000", "classe": "Classe B+", "seguranca": "Média", "poder_compra": "Médio/Alto", "perfil": "Tradicional Zona Norte • Mercado consumidor sólido"},
+    # São Paulo / Capital - Mais Populares / Oportunidades de Giro Rápido (Classe C / D)
+    "itaquera": {"renda_media": "R$ 2.100 - R$ 4.200", "classe": "Classe C/D", "tier": "popular", "uf": "SP", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Zona Leste com alto giro • Compradores buscam preços acessíveis e barganhas"},
+    "são mateus": {"renda_media": "R$ 1.800 - R$ 3.800", "classe": "Classe D/C", "tier": "popular", "uf": "SP", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Comércio popular pulsante • Forte demanda por motos e eletrônicos de entrada"},
+    "campo limpo": {"renda_media": "R$ 2.200 - R$ 4.500", "classe": "Classe C", "tier": "popular", "uf": "SP", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Zona Sul popular • Alta rotatividade de celulares e utilidades domésticas"},
+    "capão redondo": {"renda_media": "R$ 1.700 - R$ 3.500", "classe": "Classe D/C", "tier": "popular", "uf": "SP", "seguranca": "Média/Baixa", "poder_compra": "Popular", "perfil": "Mercado consumidor massivo • Foco em desapegos rápidos e pechinchas"},
+    "brasilândia": {"renda_media": "R$ 1.900 - R$ 3.900", "classe": "Classe D/C", "tier": "popular", "uf": "SP", "seguranca": "Média/Baixa", "poder_compra": "Popular", "perfil": "Zona Norte popular • Grande volume de buscas locais"},
+    "grajaú": {"renda_media": "R$ 1.600 - R$ 3.400", "classe": "Classe D/C", "tier": "popular", "uf": "SP", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Bairro populoso do extremo sul • Vendas rápidas com retirada local"},
 
-    # Belo Horizonte
-    "savassi": {"renda_media": "R$ 11.000 - R$ 22.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Zona Centro-Sul • Comércio e escritórios premium"},
-    "lourdes": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Bairro nobre de BH • Produtos de alta gama"},
-    "buritis": {"renda_media": "R$ 6.500 - R$ 13.000", "classe": "Classe B+", "seguranca": "Média/Alta", "poder_compra": "Médio/Alto", "perfil": "Bairro residencial universitário e famílias jovens"},
+    # Rio de Janeiro - Nobres (Classe A / A+)
+    "copacabana": {"renda_media": "R$ 8.500 - R$ 16.000", "classe": "Classe A/B+", "tier": "nobre", "uf": "RJ", "seguranca": "Média", "poder_compra": "Alto", "perfil": "Zona Sul densa • Negociação fácil em locais públicos"},
+    "ipanema": {"renda_media": "R$ 18.000 - R$ 38.000", "classe": "Classe A++", "tier": "nobre", "uf": "RJ", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Zona Sul nobre • Vendedores exigentes e desapegos de luxo"},
+    "leblon": {"renda_media": "R$ 22.000 - R$ 48.000+", "classe": "Classe A++", "tier": "nobre", "uf": "RJ", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior m² do Brasil • Compradores de altíssima renda"},
+    "barra da tijuca": {"renda_media": "R$ 12.000 - R$ 25.000", "classe": "Classe A", "tier": "nobre", "uf": "RJ", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios e shoppings • Preferência por retirada em shoppings"},
+    "botafogo": {"renda_media": "R$ 9.000 - R$ 17.500", "classe": "Classe A", "tier": "nobre", "uf": "RJ", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Polo jovem e corporativo • Fácil logística e metrô"},
+    "flamengo": {"renda_media": "R$ 8.200 - R$ 15.500", "classe": "Classe A/B+", "tier": "nobre", "uf": "RJ", "seguranca": "Média/Alta", "poder_compra": "Alto", "perfil": "Orla tradicional • Compradores estruturados"},
 
-    # Curitiba
-    "batel": {"renda_media": "R$ 14.000 - R$ 30.000", "classe": "Classe A+", "seguranca": "Muito Alta", "poder_compra": "Muito Alto", "perfil": "Bairro mais nobre de Curitiba • Negociações seguras"},
-    "ecoville": {"renda_media": "R$ 16.000 - R$ 35.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Edifícios de luxo • Desapegos de alto padrão"},
-    "água verde": {"renda_media": "R$ 7.800 - R$ 15.000", "classe": "Classe A/B+", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Classe média tradicional e bem estruturada"},
+    # Rio de Janeiro - Mais Populares / Oportunidades (Classe C / D)
+    "bangu": {"renda_media": "R$ 1.900 - R$ 3.900", "classe": "Classe C/D", "tier": "popular", "uf": "RJ", "seguranca": "Média/Baixa", "poder_compra": "Popular", "perfil": "Zona Oeste populosa • Comércio vibrante e pechinchas rápidas"},
+    "campo grande": {"renda_media": "R$ 2.400 - R$ 4.800", "classe": "Classe C", "tier": "popular", "uf": "RJ", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Maior bairro do RJ em população • Altíssimo volume de anúncios e vendas"},
+    "madureira": {"renda_media": "R$ 2.100 - R$ 4.200", "classe": "Classe C/D", "tier": "popular", "uf": "RJ", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Coração comercial do subúrbio carioca • Liquidez imediata para desapegos"},
+    "pavuna": {"renda_media": "R$ 1.600 - R$ 3.200", "classe": "Classe D", "tier": "popular", "uf": "RJ", "seguranca": "Baixa/Média", "poder_compra": "Popular", "perfil": "Terminal intermodal e metrô • Vendas diretas por preços agressivos"},
 
-    # Brasília (DF)
-    "asa sul": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Servidores federais e executivos • Alto poder de compra"},
-    "asa norte": {"renda_media": "R$ 13.500 - R$ 28.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Plano Piloto • Compradores qualificados e ágeis"},
-    "lago sul": {"renda_media": "R$ 28.000 - R$ 60.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior renda per capita do país • Mansões e produtos de luxo"},
-    "sudoeste": {"renda_media": "R$ 16.000 - R$ 34.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Setor nobre de alta densidade e alto padrão"}
+    # Belo Horizonte (MG) - Nobres e Populares
+    "savassi": {"renda_media": "R$ 11.000 - R$ 22.000", "classe": "Classe A+", "tier": "nobre", "uf": "MG", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Zona Centro-Sul • Comércio e escritórios premium"},
+    "lourdes": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A++", "tier": "nobre", "uf": "MG", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Bairro nobre de BH • Produtos de alta gama"},
+    "buritis": {"renda_media": "R$ 6.500 - R$ 13.000", "classe": "Classe B+", "tier": "nobre", "uf": "MG", "seguranca": "Média/Alta", "poder_compra": "Médio/Alto", "perfil": "Bairro residencial universitário e famílias jovens"},
+    "venda nova": {"renda_media": "R$ 2.000 - R$ 4.100", "classe": "Classe C/D", "tier": "popular", "uf": "MG", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Polo populoso da Zona Norte de BH • Grande demanda por eletrônicos e usados"},
+    "barreiro": {"renda_media": "R$ 2.200 - R$ 4.400", "classe": "Classe C", "tier": "popular", "uf": "MG", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Região industrial e comercial autônoma • Vendas rápidas"},
+
+    # Curitiba (PR) - Nobres e Populares
+    "batel": {"renda_media": "R$ 14.000 - R$ 30.000", "classe": "Classe A+", "tier": "nobre", "uf": "PR", "seguranca": "Muito Alta", "poder_compra": "Muito Alto", "perfil": "Bairro mais nobre de Curitiba • Negociações seguras"},
+    "ecoville": {"renda_media": "R$ 16.000 - R$ 35.000", "classe": "Classe A++", "tier": "nobre", "uf": "PR", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Edifícios de luxo • Desapegos de alto padrão"},
+    "água verde": {"renda_media": "R$ 7.800 - R$ 15.000", "classe": "Classe A/B+", "tier": "nobre", "uf": "PR", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Classe média tradicional e bem estruturada"},
+    "sítio cercado": {"renda_media": "R$ 1.900 - R$ 3.800", "classe": "Classe D/C", "tier": "popular", "uf": "PR", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Zona Sul de Curitiba • Alto giro de produtos com preços competitivos"},
+    "cic": {"renda_media": "R$ 2.100 - R$ 4.200", "classe": "Classe C/D", "tier": "popular", "uf": "PR", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Cidade Industrial • Demanda forte por ferramentas, celulares e peças"},
+
+    # Brasília (DF) - Nobres e Populares
+    "lago sul": {"renda_media": "R$ 28.000 - R$ 60.000+", "classe": "Classe A++", "tier": "nobre", "uf": "DF", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior renda per capita do país • Mansões e produtos de luxo"},
+    "sudoeste": {"renda_media": "R$ 16.000 - R$ 34.000", "classe": "Classe A++", "tier": "nobre", "uf": "DF", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Setor nobre de alta densidade e alto padrão"},
+    "asa sul": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A+", "tier": "nobre", "uf": "DF", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Servidores federais e executivos • Alto poder de compra"},
+    "asa norte": {"renda_media": "R$ 13.500 - R$ 28.000", "classe": "Classe A", "tier": "nobre", "uf": "DF", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Plano Piloto • Compradores qualificados e ágeis"},
+    "ceilândia": {"renda_media": "R$ 1.900 - R$ 3.900", "classe": "Classe C/D", "tier": "popular", "uf": "DF", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Região mais populosa do DF • Negociações populares e alta liquidez"},
+    "taguatinga": {"renda_media": "R$ 3.200 - R$ 6.500", "classe": "Classe C+/B", "tier": "popular", "uf": "DF", "seguranca": "Média/Alta", "poder_compra": "Médio", "perfil": "Polo comercial do DF • Excelente volume de compradores"},
+    "samambaia": {"renda_media": "R$ 1.800 - R$ 3.600", "classe": "Classe D/C", "tier": "popular", "uf": "DF", "seguranca": "Média", "poder_compra": "Popular", "perfil": "Mercado consumidor amplo • Oportunidades de compras baratas"}
 }
 

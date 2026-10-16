@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Estilos Personalizados Monochrome -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.4">
-  <link rel="stylesheet" href="/static/css/animations.css?v=2.4">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.5">
+  <link rel="stylesheet" href="/static/css/animations.css?v=2.5">
 </head>
 <body>
 
@@ -176,9 +176,46 @@
               </div>
             </div>
 
-            <div class="filter-group" id="filter-group-neighborhood">
-              <label class="filter-label" for="search-neighborhood-input">Bairro / Região (IA Rendas)</label>
-              <input type="text" id="search-neighborhood-input" class="cyber-input filter-num-input" placeholder="Ex: Moema, Copacabana, Savassi..." aria-label="Filtrar por Bairro">
+            <div class="filter-group neighborhood-feature-group" id="filter-group-neighborhood">
+              <div class="neighborhood-header-row">
+                <label class="filter-label" for="search-neighborhood-input">Bairro / Região (IA Rendas)</label>
+                <div class="neighborhood-auto-toggle-wrap">
+                  <button type="button" id="btn-neighborhood-auto" class="cyber-btn-mini active" title="Selecionar automaticamente a melhor opção de bairro da categoria">
+                    <span class="sparkle-icon">✨</span>
+                    <span class="btn-text">Melhor Escolha Auto</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="neighborhood-input-wrapper">
+                <input type="text" id="search-neighborhood-input" class="cyber-input filter-num-input" placeholder="Ex: Moema, Copacabana, Savassi..." aria-label="Filtrar por Bairro">
+                <button type="button" id="btn-clear-neighborhood" class="neighborhood-clear-btn" title="Limpar Bairro" style="display: none;">✕</button>
+              </div>
+
+              <!-- Seletor de Perfil Socioeconômico (Nobres vs Populares) -->
+              <div class="neighborhood-tier-selector">
+                <button type="button" class="tier-pill-btn active" data-tier="nobre">
+                  <span class="tier-icon">⭐</span>
+                  <span class="tier-name">Bairros Nobres</span>
+                  <span class="tier-tag">Alta Renda (Classe A/B)</span>
+                </button>
+                <button type="button" class="tier-pill-btn" data-tier="popular">
+                  <span class="tier-icon">⚡</span>
+                  <span class="tier-name">Mais Populares</span>
+                  <span class="tier-tag">Giro Rápido (Classe C/D)</span>
+                </button>
+              </div>
+
+              <!-- Sugestões Dinâmicas de Bairros Baseadas no Estado/Perfil -->
+              <div class="neighborhood-suggestions-container" id="neighborhood-suggestions-box">
+                <div class="suggestions-header">
+                  <span class="suggestions-title">Sugestões Estratégicas para <span id="current-uf-badge">SP</span>:</span>
+                  <span class="selection-mode-indicator" id="selection-mode-label">⚡ Modo Automático Ativo</span>
+                </div>
+                <div class="neighborhood-chips-list" id="neighborhood-chips-list">
+                  <!-- Injetado dinamicamente via JS -->
+                </div>
+              </div>
             </div>
 
             <div class="filter-group">
@@ -1341,11 +1378,11 @@
   <div id="toast-container"></div>
 
   <!-- Scripts do Sistema -->
-  <script src="/static/js/avatars.js?v=2.4"></script>
-  <script src="/static/js/shield.js?v=2.4"></script>
-  <script src="/static/js/dropdown.js?v=2.4"></script>
-  <script src="/static/js/three-bg.js?v=2.4"></script>
-  <script src="/static/js/scanner3d.js?v=2.4"></script>
-  <script src="/static/js/app.js?v=2.4"></script>
+  <script src="/static/js/avatars.js?v=2.5"></script>
+  <script src="/static/js/shield.js?v=2.5"></script>
+  <script src="/static/js/dropdown.js?v=2.5"></script>
+  <script src="/static/js/three-bg.js?v=2.5"></script>
+  <script src="/static/js/scanner3d.js?v=2.5"></script>
+  <script src="/static/js/app.js?v=2.5"></script>
 </body>
 </html>

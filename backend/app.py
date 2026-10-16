@@ -7,7 +7,7 @@ import requests
 from pydantic import BaseModel
 from typing import Optional
 
-from .config import BRAZILIAN_STATES, CATEGORIES, BRAZILIAN_CITIES, ADMIN_SECRET_KEY, DEFAULT_AVATAR_URI
+from .config import BRAZILIAN_STATES, CATEGORIES, BRAZILIAN_CITIES, ADMIN_SECRET_KEY, DEFAULT_AVATAR_URI, NEIGHBORHOOD_SOCIO_DATA
 
 from .database import (
     init_db, get_or_create_lead, update_lead_profile, get_lead_by_vulgo, list_leads,
@@ -207,7 +207,8 @@ async def get_system_config():
     return {
         "states": BRAZILIAN_STATES,
         "cities": BRAZILIAN_CITIES,
-        "categories": CATEGORIES
+        "categories": CATEGORIES,
+        "neighborhoods": NEIGHBORHOOD_SOCIO_DATA
     }
 
 # Proxy Seguro de Imagens da OLX (Evita 403 Forbidden de Hotlink)
