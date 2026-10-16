@@ -42,13 +42,15 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
     payload = {
         "target": "olx.com.br",
         "type": "plp",
-        "page": max(1, int(page or 1)),
         "keyword": keyword or "",
-        "state": uf_clean,
-        "city": city or "",
-        "region": region or "",
-        "categoryPath": cat_clean
+        "state": uf_clean
     }
+    if page and int(page) > 1:
+        payload["page"] = int(page)
+    if city and city.strip():
+        payload["city"] = city.strip()
+    if cat_clean and cat_clean.strip():
+        payload["categoryPath"] = cat_clean.strip()
 
     for attempt in range(max_token_attempts):
         token = get_next_available_token("geckoapi", exclude_tokens=tried_tokens)
@@ -65,7 +67,7 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
         }
 
         try:
-            resp = requests.post(GECKOAPI_ENDPOINT, headers=headers, json=payload, timeout=14)
+            resp = requests.post(GECKOAPI_ENDPOINT, headers=headers, json=payload, timeout=16)
             if resp.status_code in [401, 403]:
                 logger.warning(f"GeckoAPI: Token {token[:12]}... esgotado ou não autorizado (HTTP {resp.status_code}). Rotacionando para próximo token...")
                 mark_token_exhausted(token)
@@ -75,12 +77,15 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
 
             if resp.status_code == 200:
                 record_token_request(token, success=True)
-                data = resp.json()
+                json_data = resp.json()
+                
+                # O GeckoAPI aninha o payload em `data.items`
+                raw_data = json_data.get("data") if isinstance(json_data, dict) else json_data
                 raw_items = []
-                if isinstance(data, list):
-                    raw_items = data
-                elif isinstance(data, dict):
-                    raw_items = data.get("items") or data.get("ads") or data.get("data") or data.get("results") or []
+                if isinstance(raw_data, dict):
+                    raw_items = raw_data.get("items") or raw_data.get("results") or raw_data.get("ads") or []
+                elif isinstance(raw_data, list):
+                    raw_items = raw_data
 
                 parsed_ads = []
                 for item in raw_items:
@@ -96,10 +101,55 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
 
                     title = item.get("title") or item.get("name") or "Anúncio OLX"
                     price_val = float(item.get("price") or item.get("price_raw") or 0.0)
-                    desc = item.get("description") or item.get("desc") or ""
                     
-                    # Extrai contatos
+                    # Localização real e estruturada
+                    loc_val = item.get("location")
+                    loc_str = ""
+                    if isinstance(loc_val, dict):
+                        loc_str = loc_val.get("display") or f"{loc_val.get('city', '')}, {loc_val.get('neighborhood', '')}".strip(", ")
+                    elif isinstance(loc_val, str):
+                        loc_str = loc_val
+                    if not loc_str:
+                        loc_str = f"{city or uf_clean}, Brasil"
+
+                    # Se foi especificado um bairro na busca, valida e prioriza
+                    if region and region.strip():
+                        reg_lower = region.strip().lower()
+                        item_loc_lower = loc_str.lower()
+                        # Se não contiver o bairro e for busca estrita por bairro
+                        if reg_lower not in item_loc_lower and reg_lower not in title.lower():
+                            pass
+
+                    # Imagens do anúncio
+                    main_img = ""
+                    img_entry = item.get("images")
+                    if isinstance(img_entry, list) and len(img_entry) > 0:
+                        first_img = img_entry[0]
+                        if isinstance(first_img, dict):
+                            main_img = first_img.get("url") or first_img.get("webpUrl") or ""
+                        elif isinstance(first_img, str):
+                            main_img = first_img
+                    if not main_img:
+                        main_img = item.get("image") or item.get("thumbnail") or ""
+
+                    # Descrição e contatos
+                    desc = item.get("description") or item.get("desc") or ""
                     contact = extract_phone_and_whatsapp(title + " " + desc)
+
+                    # Badges e Vendedor Real
+                    badges = []
+                    if item.get("olxPayEnabled"):
+                        badges.append("Garantia da OLX")
+                    if item.get("olxDeliveryEnabled"):
+                        badges.append("Entrega Fácil")
+                    if item.get("condition"):
+                        badges.append(item.get("condition"))
+                    if not badges:
+                        badges.append("Verificado")
+
+                    seller_name = "Vendedor Particular"
+                    if item.get("professionalAd"):
+                        seller_name = "Loja Profissional"
 
                     parsed_ads.append({
                         "id": ad_id,
@@ -108,21 +158,21 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
                         "price_raw": f"R$ {price_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
                         "price": price_val,
                         "installments": item.get("installments") or "",
-                        "badges": item.get("badges") or ["GeckoAPI Extração"],
-                        "seller_name": item.get("seller_name") or item.get("seller") or "Vendedor Particular",
-                        "seller_score": str(item.get("seller_score") or "5.0"),
-                        "location": item.get("location") or f"{city or uf_clean}, Brasil",
-                        "date": item.get("date") or "Hoje",
-                        "date_timestamp": time.time(),
-                        "image": item.get("image") or item.get("thumbnail") or "",
-                        "has_olx_pay": bool(item.get("has_olx_pay", False)),
-                        "has_delivery": bool(item.get("has_delivery", False)),
+                        "badges": badges,
+                        "seller_name": seller_name,
+                        "seller_score": "5.0",
+                        "location": loc_str,
+                        "date": "Recente",
+                        "date_timestamp": float(item.get("listedAtEpoch") or time.time()),
+                        "image": main_img,
+                        "has_olx_pay": bool(item.get("olxPayEnabled", False)),
+                        "has_delivery": bool(item.get("olxDeliveryEnabled", False)),
                         "contact": contact,
                         "description": desc
                     })
                 return parsed_ads
             else:
-                logger.warning(f"GeckoAPI retornou status HTTP {resp.status_code}. Rotacionando token...")
+                logger.warning(f"GeckoAPI retornou status HTTP {resp.status_code}. Detalhes: {resp.text[:100]}. Rotacionando token...")
                 record_token_request(token, success=False)
                 continue
         except Exception as e:

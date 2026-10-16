@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Estilos Personalizados Monochrome -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.6">
-  <link rel="stylesheet" href="/static/css/animations.css?v=2.6">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.7">
+  <link rel="stylesheet" href="/static/css/animations.css?v=2.7">
 </head>
 <body>
 
@@ -176,19 +176,10 @@
               </div>
             </div>
 
-            <div class="filter-group neighborhood-feature-group" id="filter-group-neighborhood">
-              <div class="neighborhood-header-row">
+            <div class="filter-group" id="filter-group-neighborhood">
+              <div class="filter-label-row">
                 <label class="filter-label" for="search-neighborhood-input">Bairro / Região (IA Rendas)</label>
-                <div class="neighborhood-auto-toggle-wrap">
-                  <button type="button" id="btn-neighborhood-auto" class="cyber-btn-mini active" title="Selecionar automaticamente a melhor opção de bairro da categoria">
-                    <svg class="vector-icon vector-sparkle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                    <span class="btn-text">Melhor Escolha Auto</span>
-                  </button>
-                </div>
               </div>
-
               <div class="neighborhood-input-wrapper">
                 <input type="text" id="search-neighborhood-input" class="cyber-input filter-num-input" placeholder="Ex: Moema, Copacabana, Savassi..." aria-label="Filtrar por Bairro">
                 <button type="button" id="btn-clear-neighborhood" class="neighborhood-clear-btn" title="Limpar Bairro" style="display: none;">
@@ -197,42 +188,6 @@
                     <line x1="6" y1="6" x2="18" y2="18"></line>
                   </svg>
                 </button>
-              </div>
-
-              <!-- Seletor de Perfil Socioeconômico (Nobres vs Populares) com Ícones Vetoriais SVG -->
-              <div class="neighborhood-tier-selector">
-                <button type="button" class="tier-pill-btn active" data-tier="nobre">
-                  <span class="tier-icon-wrap">
-                    <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                  </span>
-                  <span class="tier-name">Bairros Nobres</span>
-                  <span class="tier-tag">Alta Renda (Classe A/B)</span>
-                </button>
-                <button type="button" class="tier-pill-btn" data-tier="popular">
-                  <span class="tier-icon-wrap">
-                    <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                  </span>
-                  <span class="tier-name">Mais Populares</span>
-                  <span class="tier-tag">Giro Rápido (Classe C/D)</span>
-                </button>
-              </div>
-
-              <!-- Sugestões Dinâmicas de Bairros Baseadas no Estado/Perfil -->
-              <div class="neighborhood-suggestions-container" id="neighborhood-suggestions-box">
-                <div class="suggestions-header">
-                  <span class="suggestions-title">Sugestões Estratégicas para <span id="current-uf-badge">SP</span>:</span>
-                  <span class="selection-mode-indicator" id="selection-mode-label">
-                    <svg class="vector-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                    Modo Automático Ativo
-                  </span>
-                </div>
-                <div class="neighborhood-chips-list" id="neighborhood-chips-list">
-                  <!-- Injetado dinamicamente via JS com vetores SVG -->
-                </div>
               </div>
             </div>
 
@@ -272,6 +227,70 @@
                   <option value="cheapest">Menor Preço</option>
                   <option value="expensive">Maior Preço</option>
                 </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- PAINEL ESTRATÉGICO INTELIGENTE DE BAIRROS (ALINHAMENTO HARMONIZADO 100% ORGANIZADO) -->
+          <div class="neighborhood-intelligence-card" id="neighborhood-intelligence-panel">
+            <div class="neighborhood-card-header">
+              <div class="neighborhood-card-title-wrap">
+                <div class="neighborhood-card-icon">
+                  <svg class="vector-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                    <circle cx="12" cy="10" r="3"></circle>
+                  </svg>
+                </div>
+                <div>
+                  <div class="neighborhood-card-title">Inteligência Estratégica de Bairros</div>
+                  <div class="neighborhood-card-subtitle">Sugestões socioeconômicas otimizadas para <strong id="current-uf-badge">SP</strong></div>
+                </div>
+              </div>
+
+              <div class="neighborhood-header-actions">
+                <button type="button" id="btn-neighborhood-auto" class="cyber-btn-mini active" title="Selecionar automaticamente a melhor opção de bairro da categoria">
+                  <svg class="vector-icon vector-sparkle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                  <span class="btn-text">Melhor Escolha Auto</span>
+                </button>
+                <div class="selection-mode-indicator" id="selection-mode-label">
+                  <svg class="vector-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                  <span>Modo Automático Ativo</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Seletor de Perfil Socioeconômico (Nobres vs Populares) com Ícones Vetoriais SVG -->
+            <div class="neighborhood-tier-selector">
+              <button type="button" class="tier-pill-btn active" data-tier="nobre">
+                <span class="tier-icon-wrap">
+                  <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                  </svg>
+                </span>
+                <div class="tier-info">
+                  <span class="tier-name">Bairros Nobres</span>
+                  <span class="tier-tag">Alta Renda (Classe A/B • Maior Ticket Médio)</span>
+                </div>
+              </button>
+              <button type="button" class="tier-pill-btn" data-tier="popular">
+                <span class="tier-icon-wrap">
+                  <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                  </svg>
+                </span>
+                <div class="tier-info">
+                  <span class="tier-name">Mais Populares</span>
+                  <span class="tier-tag">Giro Rápido (Classe C/D • Volume Recorde de Vendas)</span>
+                </div>
+              </button>
+            </div>
+
+            <!-- Sugestões Dinâmicas de Bairros Baseadas no Estado/Perfil -->
+            <div class="neighborhood-suggestions-container" id="neighborhood-suggestions-box">
+              <div class="neighborhood-chips-list" id="neighborhood-chips-list">
+                <!-- Injetado dinamicamente via JS com vetores SVG -->
               </div>
             </div>
           </div>
@@ -1396,11 +1415,11 @@
   <div id="toast-container"></div>
 
   <!-- Scripts do Sistema -->
-  <script src="/static/js/avatars.js?v=2.6"></script>
-  <script src="/static/js/shield.js?v=2.6"></script>
-  <script src="/static/js/dropdown.js?v=2.6"></script>
-  <script src="/static/js/three-bg.js?v=2.6"></script>
-  <script src="/static/js/scanner3d.js?v=2.6"></script>
-  <script src="/static/js/app.js?v=2.6"></script>
+  <script src="/static/js/avatars.js?v=2.7"></script>
+  <script src="/static/js/shield.js?v=2.7"></script>
+  <script src="/static/js/dropdown.js?v=2.7"></script>
+  <script src="/static/js/three-bg.js?v=2.7"></script>
+  <script src="/static/js/scanner3d.js?v=2.7"></script>
+  <script src="/static/js/app.js?v=2.7"></script>
 </body>
 </html>
