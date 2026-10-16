@@ -2760,7 +2760,7 @@
       // Ordenação Inteligente Baseada em Score Algorítmico e Auto Rank
       const sortedEntries = matchingEntries.sort((a, b) => {
         const scoreA = (a[1].score !== undefined) ? a[1].score : 50;
-        const scoreB = b[1].score !== undefined) ? b[1].score : 50;
+        const scoreB = (b[1].score !== undefined) ? b[1].score : 50;
         if (scoreB !== scoreA) {
           return scoreB - scoreA;
         }
@@ -2884,7 +2884,10 @@
           `;
           selectionModeLabel.className = 'selection-mode-indicator manual';
         }
-        btnClearNeighborhood.style.display = 'none';
+        if (btnClearNeighborhood) {
+          btnClearNeighborhood.classList.add('hidden');
+          btnClearNeighborhood.style.display = 'none';
+        }
         document.querySelectorAll('.neighborhood-chip').forEach(c => c.classList.remove('selected'));
       });
     }
@@ -2894,7 +2897,13 @@
         const val = e.target.value.trim();
         state.selectedNeighborhood = val;
         if (btnClearNeighborhood) {
-          btnClearNeighborhood.style.display = val ? 'inline-flex' : 'none';
+          if (val) {
+            btnClearNeighborhood.classList.remove('hidden');
+            btnClearNeighborhood.style.display = 'inline-flex';
+          } else {
+            btnClearNeighborhood.classList.add('hidden');
+            btnClearNeighborhood.style.display = 'none';
+          }
         }
         // Se usuário digitou manualmente algo diferente, desativa o modo auto
         if (state.neighborhoodAutoMode && val.length > 0) {
