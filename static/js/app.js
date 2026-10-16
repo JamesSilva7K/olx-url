@@ -87,8 +87,7 @@
       openProfileModal(true);
     } else {
       updateLeadHeaderDisplay();
-      // Executa busca inicial real para o lead
-      runSearch("iphone", state.selectedState, state.selectedCategory, null, null, state.selectedSort);
+      renderAdsGrid([]);
     }
   }
 
@@ -705,13 +704,14 @@
     if (!container) return;
 
     if (!ads || ads.length === 0) {
+      const isInitial = (!state.rawAds || state.rawAds.length === 0);
       container.innerHTML = `
         <div class="empty-results-box">
           <div class="empty-results-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
           </div>
-          <p class="empty-results-title">Nenhum anúncio localizado para esses filtros.</p>
-          <p class="empty-results-desc">Tente alterar o termo no filtro rápido ou selecione o chip "Todos".</p>
+          <p class="empty-results-title">${isInitial ? 'Nenhuma busca realizada ainda.' : 'Nenhum anúncio localizado para esses filtros.'}</p>
+          <p class="empty-results-desc">${isInitial ? 'Digite o termo desejado no campo acima e clique em "Puxar Anúncios Reais" para iniciar.' : 'Tente alterar o termo no filtro rápido ou selecione o chip "Todos".'}</p>
         </div>
       `;
       return;
