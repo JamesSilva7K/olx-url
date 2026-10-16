@@ -137,20 +137,36 @@ def init_db():
     # Inicializa configurações padrão dos Motores de Busca e Raspagem
     now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     default_settings = [
-        ("primary_engine", "cloudscraper"),     # Opções: 'cloudscraper', 'geckoapi', 'scraperapi'
-        ("secondary_engine", "scraperapi"),     # Fallover automático se a primeira falhar
+        ("primary_engine", "geckoapi"),         # Gecko API como principal solicitada pelo usuário
+        ("secondary_engine", "scraperapi"),     # Scraper API como secundária/fallover
         ("geckoapi_target", "olx.com.br"),
         ("theme_mode", "dark")                  # Suporte aos temas dark e white
     ]
     for k, v in default_settings:
-        cursor.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES (?, ?, ?)", (k, v, now_str))
-    cursor.execute("SELECT COUNT(*) as c FROM api_tokens")
-    if cursor.fetchone()["c"] == 0:
-        now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        cursor.execute("INSERT OR REPLACE INTO system_settings (key, value, updated_at) VALUES (?, ?, ?)", (k, v, now_str))
+
+    # Injeta e atualiza o pool de tokens de alta fidelidade fornecidos pelo usuário
+    initial_tokens = [
+        # Gecko API Tokens (Motor Primário com rotação e prioridades 1, 2, 3)
+        ("pk_live_j4adq4Druop5ZXtPOrOAP5MIHSufn504", "geckoapi", "primary", 1, 10000, "Gecko API Primária #1"),
+        ("pk_live_VtY--1rj36T7pcMe0jf_xBL6ixkkA5ip", "geckoapi", "primary", 2, 10000, "Gecko API Primária #2"),
+        ("pk_live_hk2i9R3ybkwiZd4Ju9tdwKVqCQpCTzvS", "geckoapi", "primary", 3, 10000, "Gecko API Primária #3"),
+        # Scraper API Tokens (Motor Secundário / Fallover com prioridades 1, 2, 3)
+        ("1b19c32cf9891768e5da3bb46df3167c", "scraperapi", "secondary", 1, 5000, "ScraperAPI Secundária #1"),
+        ("8cc0009c255fbf2474860cb8431aca8e", "scraperapi", "secondary", 2, 5000, "ScraperAPI Secundária #2"),
+        ("db041394a5ba5f230cba0efe9e43f92b", "scraperapi", "secondary", 3, 5000, "ScraperAPI Secundária #3"),
+    ]
+    for tok, srv, role, prio, creds, desc in initial_tokens:
         cursor.execute("""
-        INSERT INTO api_tokens (token, service, is_active, status, requests_count, created_at)
-        VALUES (?, 'scraperapi', 1, 'ready', 0, ?)
-        """, ("1aec3392b82784e4578154b96887e010", now_str))
+        INSERT INTO api_tokens (token, service, role, priority, is_active, status, requests_count, remaining_credits, total_credits, details, created_at)
+        VALUES (?, ?, ?, ?, 1, 'ready', 0, ?, ?, ?, ?)
+        ON CONFLICT(token) DO UPDATE SET
+            service = excluded.service,
+            role = excluded.role,
+            priority = excluded.priority,
+            is_active = 1,
+            details = excluded.details
+        """, (tok, srv, role, prio, creds, creds, desc, now_str))
 
     # Auto-correção de avatares corrompidos ou mockados na inicialização
     cursor.execute("""

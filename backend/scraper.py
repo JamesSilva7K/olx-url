@@ -24,20 +24,11 @@ GECKOAPI_ENDPOINT = "https://api.geckoapi.com.br/v1/extract"
 def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path: str = "", page: int = 1, city: str = "", region: str = "") -> list:
     """
     Executa extração profissional e avançada via GeckoAPI (https://api.geckoapi.com.br/v1/extract).
-    Utiliza token configurado no pool ou prioritário, estruturando dados em formato unificado.
+    Possui rotação automática e inteligente entre todos os tokens ativos: se um token acabar ou falhar,
+    o sistema passa automaticamente para o próximo token cadastrado.
     """
-    token = get_next_available_token("geckoapi")
-    if not token:
-        token = get_next_available_token("scraperapi") # Fallback se cadastrado
-    if not token:
-        logger.warning("GeckoAPI: Nenhum token ativo encontrado no pool.")
-        return []
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "User-Agent": "OLX-Scraper-Intelligence/2.0"
-    }
+    tried_tokens = []
+    max_token_attempts = 5
 
     # Tratamento de UF e Categoria
     uf_clean = (state_uf or "SP").upper()
@@ -59,67 +50,85 @@ def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path
         "categoryPath": cat_clean
     }
 
-    try:
-        resp = requests.post(GECKOAPI_ENDPOINT, headers=headers, json=payload, timeout=14)
-        if resp.status_code in [401, 403]:
-            mark_token_exhausted(token)
+    for attempt in range(max_token_attempts):
+        token = get_next_available_token("geckoapi", exclude_tokens=tried_tokens)
+        if not token:
+            logger.warning("GeckoAPI: Nenhum token adicional disponível no pool de tokens.")
+            break
+
+        tried_tokens.append(token)
+
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+            "User-Agent": "OLX-Scraper-Intelligence/2.0"
+        }
+
+        try:
+            resp = requests.post(GECKOAPI_ENDPOINT, headers=headers, json=payload, timeout=14)
+            if resp.status_code in [401, 403]:
+                logger.warning(f"GeckoAPI: Token {token[:12]}... esgotado ou não autorizado (HTTP {resp.status_code}). Rotacionando para próximo token...")
+                mark_token_exhausted(token)
+                record_token_request(token, success=False)
+                update_token_credits(token, remaining=0, status="exhausted", details="Token esgotado ou sem saldo na GeckoAPI")
+                continue
+
+            if resp.status_code == 200:
+                record_token_request(token, success=True)
+                data = resp.json()
+                raw_items = []
+                if isinstance(data, list):
+                    raw_items = data
+                elif isinstance(data, dict):
+                    raw_items = data.get("items") or data.get("ads") or data.get("data") or data.get("results") or []
+
+                parsed_ads = []
+                for item in raw_items:
+                    if not isinstance(item, dict):
+                        continue
+                    ad_url = item.get("url") or item.get("link") or ""
+                    if not ad_url:
+                        continue
+                    ad_id = str(item.get("id") or "")
+                    if not ad_id:
+                        m = re.search(r"-(\d{6,14})", ad_url)
+                        ad_id = m.group(1) if m else str(int(time.time() * 1000))
+
+                    title = item.get("title") or item.get("name") or "Anúncio OLX"
+                    price_val = float(item.get("price") or item.get("price_raw") or 0.0)
+                    desc = item.get("description") or item.get("desc") or ""
+                    
+                    # Extrai contatos
+                    contact = extract_phone_and_whatsapp(title + " " + desc)
+
+                    parsed_ads.append({
+                        "id": ad_id,
+                        "title": title,
+                        "url": ad_url,
+                        "price_raw": f"R$ {price_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                        "price": price_val,
+                        "installments": item.get("installments") or "",
+                        "badges": item.get("badges") or ["GeckoAPI Extração"],
+                        "seller_name": item.get("seller_name") or item.get("seller") or "Vendedor Particular",
+                        "seller_score": str(item.get("seller_score") or "5.0"),
+                        "location": item.get("location") or f"{city or uf_clean}, Brasil",
+                        "date": item.get("date") or "Hoje",
+                        "date_timestamp": time.time(),
+                        "image": item.get("image") or item.get("thumbnail") or "",
+                        "has_olx_pay": bool(item.get("has_olx_pay", False)),
+                        "has_delivery": bool(item.get("has_delivery", False)),
+                        "contact": contact,
+                        "description": desc
+                    })
+                return parsed_ads
+            else:
+                logger.warning(f"GeckoAPI retornou status HTTP {resp.status_code}. Rotacionando token...")
+                record_token_request(token, success=False)
+                continue
+        except Exception as e:
             record_token_request(token, success=False)
-            update_token_credits(token, remaining=0, status="exhausted", details="Token inválido ou sem saldo na GeckoAPI")
-            return []
-
-        if resp.status_code == 200:
-            record_token_request(token, success=True)
-            data = resp.json()
-            # Mapeia produtos/anúncios retornados pela GeckoAPI
-            raw_items = []
-            if isinstance(data, list):
-                raw_items = data
-            elif isinstance(data, dict):
-                raw_items = data.get("items") or data.get("ads") or data.get("data") or data.get("results") or []
-
-            parsed_ads = []
-            for item in raw_items:
-                if not isinstance(item, dict):
-                    continue
-                ad_url = item.get("url") or item.get("link") or ""
-                if not ad_url:
-                    continue
-                ad_id = str(item.get("id") or "")
-                if not ad_id:
-                    m = re.search(r"-(\d{6,14})", ad_url)
-                    ad_id = m.group(1) if m else str(int(time.time() * 1000))
-
-                title = item.get("title") or item.get("name") or "Anúncio OLX"
-                price_val = float(item.get("price") or item.get("price_raw") or 0.0)
-                desc = item.get("description") or item.get("desc") or ""
-                
-                # Extrai contatos
-                contact = extract_phone_and_whatsapp(title + " " + desc)
-
-                parsed_ads.append({
-                    "id": ad_id,
-                    "title": title,
-                    "url": ad_url,
-                    "price_raw": f"R$ {price_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
-                    "price": price_val,
-                    "installments": item.get("installments") or "",
-                    "badges": item.get("badges") or ["GeckoAPI Extração"],
-                    "seller_name": item.get("seller_name") or item.get("seller") or "Vendedor Particular",
-                    "seller_score": str(item.get("seller_score") or "5.0"),
-                    "location": item.get("location") or f"{city or uf_clean}, Brasil",
-                    "date": item.get("date") or "Hoje",
-                    "date_timestamp": time.time(),
-                    "image": item.get("image") or item.get("thumbnail") or "",
-                    "has_olx_pay": bool(item.get("has_olx_pay", False)),
-                    "has_delivery": bool(item.get("has_delivery", False)),
-                    "contact": contact,
-                    "description": desc
-                })
-            return parsed_ads
-    except Exception as e:
-        record_token_request(token, success=False)
-        logger.warning(f"GeckoAPI exception: {e}")
-        return []
+            logger.warning(f"GeckoAPI exception no token {token[:12]}...: {e}. Tentando próximo token...")
+            continue
 
     return []
 
