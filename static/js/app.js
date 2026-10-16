@@ -5,11 +5,14 @@
     currentLead: JSON.parse(localStorage.getItem('olx_lead_profile') || 'null'),
     adminToken: sessionStorage.getItem('olx_admin_token') || null,
     states: [],
+    cities: {},
     categories: [],
     chartInstance: null,
     activeTab: 'consultador',
     adminActiveSubtab: 'leads',
     selectedState: 'BR',
+    selectedCity: '',
+    selectedNeighborhood: '',
     selectedCategory: 'todas',
     selectedSort: 'recent',
     dropdowns: {},
@@ -61,19 +64,65 @@
     return res;
   }
 
-  // Inicialização do Sistema
+  // Inicialização do Sistema com Reidratação Blindada de Sessão
   async function init() {
+    initTheme();
     setupEventListeners();
     renderAvatarPresets();
     await loadConfig();
 
+    // Reidratação segura do perfil do lead
     if (!state.currentLead) {
+      try {
+        const stored = localStorage.getItem('olx_lead_profile');
+        if (stored) {
+          state.currentLead = JSON.parse(stored);
+        }
+      } catch (err) {
+        console.warn("Recuperando perfil padrão de lead:", err);
+      }
+    }
+
+    if (!state.currentLead || !state.currentLead.vulgo) {
       openProfileModal(true);
     } else {
       updateLeadHeaderDisplay();
-      // Executa busca inicial real
+      // Executa busca inicial real para o lead
       runSearch("iphone", state.selectedState, state.selectedCategory, null, null, state.selectedSort);
     }
+  }
+
+  // Gerenciamento Avançado de Tema Dark / White
+  function initTheme() {
+    const savedTheme = localStorage.getItem('olx_system_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    const toggleBtn = document.getElementById('system-theme-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', () => {
+        const currentTheme = document.body.classList.contains('theme-white') ? 'white' : 'dark';
+        const newTheme = currentTheme === 'dark' ? 'white' : 'dark';
+        applyTheme(newTheme);
+        CyberShield.playSound('click');
+        CyberShield.showToast(`Modo ${newTheme === 'white' ? 'Claro' : 'Escuro'} Ativado!`, "info");
+      });
+    }
+  }
+
+  function applyTheme(theme) {
+    const sunIcon = document.querySelector('.theme-icon-sun');
+    const moonIcon = document.querySelector('.theme-icon-moon');
+
+    if (theme === 'white') {
+      document.body.classList.add('theme-white');
+      if (sunIcon) sunIcon.style.display = 'none';
+      if (moonIcon) moonIcon.style.display = 'block';
+    } else {
+      document.body.classList.remove('theme-white');
+      if (sunIcon) sunIcon.style.display = 'block';
+      if (moonIcon) moonIcon.style.display = 'none';
+    }
+    localStorage.setItem('olx_system_theme', theme);
   }
 
   // Lista nativa embutida para inicialização instantânea e à prova de falhas
@@ -112,9 +161,8 @@
     { id: "servicos", name: "Serviços" }
   ];
 
-  // Carrega Estados e Categorias da API e inicializa os Dropdowns Customizados
+  // Carrega Estados, Cidades e Categorias da API e inicializa os Dropdowns Customizados
   async function loadConfig() {
-    // 1. Inicialização síncrona imediata com dados default para nunca ficar em branco
     renderDropdowns(DEFAULT_STATES, DEFAULT_CATEGORIES);
 
     try {
@@ -123,8 +171,9 @@
         const data = await res.json();
         if (data.states && data.states.length) {
           state.states = data.states;
+          state.cities = data.cities || {};
           state.categories = data.categories;
-          renderDropdowns(state.states, state.categories);
+          renderDropdowns(state.states, state.categories, state.cities);
         }
       }
     } catch (e) {
@@ -132,9 +181,39 @@
     }
   }
 
-  function renderDropdowns(statesList, categoriesList) {
+  function updateCityDropdown(uf) {
+    const cityContainer = document.getElementById('dropdown-city-container');
+    if (!cityContainer) return;
+
+    const citiesList = (state.cities && state.cities[uf]) ? state.cities[uf] : [];
+    const cityItems = [
+      { value: "", label: uf === "BR" ? "Selecione uma UF primeiro" : `Todas as Cidades de ${uf}`, badge: "" },
+      ...citiesList.map(c => ({
+        value: c.slug,
+        label: c.name,
+        badge: ""
+      }))
+    ];
+
+    state.selectedCity = "";
+    if (window.CyberDropdown) {
+      state.dropdowns.city = CyberDropdown.create("#dropdown-city-container", {
+        placeholder: "Selecione a Cidade / Região",
+        items: cityItems,
+        selectedValue: "",
+        hasSearch: true,
+        searchPlaceholder: "Buscar cidade...",
+        onChange: (val) => {
+          state.selectedCity = val;
+        }
+      });
+    }
+  }
+
+  function renderDropdowns(statesList, categoriesList, citiesDict = {}) {
     state.states = statesList;
     state.categories = categoriesList;
+    state.cities = citiesDict;
 
     // 1. Inicializa Dropdown de Estados (UF)
     const stateItems = statesList.map(s => ({
@@ -151,10 +230,14 @@
       searchPlaceholder: "Buscar Estado por nome ou UF...",
       onChange: (val) => {
         state.selectedState = val;
+        updateCityDropdown(val);
       }
     });
 
-    // 2. Inicializa Dropdown de Categorias
+    // 2. Inicializa Dropdown de Cidades
+    updateCityDropdown(state.selectedState || "BR");
+
+    // 3. Inicializa Dropdown de Categorias
     const catItems = categoriesList.map(c => ({
       value: c.id,
       label: c.name,
@@ -172,7 +255,7 @@
       }
     });
 
-    // 3. Inicializa Dropdown de Ordenação
+    // 4. Inicializa Dropdown de Ordenação
     const sortItems = [
       { value: "recent", label: "Mais Recentes (Novos Primeiro)" },
       { value: "relevance", label: "Mais Relevantes" },
@@ -245,16 +328,21 @@
     if (myAvatar) myAvatar.src = state.currentLead.avatar || defaultAvatar;
   }
 
-  // Execução de Busca Real na OLX Brasil
-  async function runSearch(keyword, uf, category, minPrice, maxPrice, sortBy, pages, fetchFullDescriptions, onlyNewSellers, maxSellerAds180d) {
+  // Execução de Busca Real na OLX Brasil com Filtros Avançados
+  async function runSearch(keyword, uf, category, minPrice, maxPrice, sortBy, pages, fetchFullDescriptions, onlyNewSellers, maxSellerAds180d, citySlug, neighborhood) {
     if (!state.currentLead) {
       openProfileModal(true);
       return;
     }
 
     const pagesNum = Math.max(1, Math.min(30, parseInt(pages) || 1));
+    const activeCity = citySlug !== undefined ? citySlug : (state.selectedCity || "");
+    const activeBairro = neighborhood !== undefined ? neighborhood : (state.selectedNeighborhood || "");
+
     let loadingMsg = "CONSULTANDO ANÚNCIOS REAIS OLX...";
-    if (pagesNum > 1 && fetchFullDescriptions) {
+    if (activeBairro) {
+      loadingMsg = `ANALISANDO BAIRRO "${activeBairro.toUpperCase()}" & RENDAS...`;
+    } else if (pagesNum > 1 && fetchFullDescriptions) {
       loadingMsg = `EXTRAINDO ${pagesNum} PÁGINAS & ENRIQUECENDO LEADS...`;
     } else if (pagesNum > 1) {
       loadingMsg = `VARRENDO ${pagesNum} PÁGINAS DA OLX...`;
@@ -294,6 +382,8 @@
         body: JSON.stringify({
           keyword: keyword || "",
           state_uf: uf || state.selectedState || "BR",
+          city_slug: activeCity,
+          neighborhood: activeBairro,
           category_id: category || state.selectedCategory || "todas",
           min_price: parsePriceInput(minPrice),
           max_price: parsePriceInput(maxPrice),
@@ -301,6 +391,7 @@
           pages: pagesNum,
           fetch_full_descriptions: !!fetchFullDescriptions,
           only_new_sellers: !!onlyNewSellers,
+          only_with_contact: true,
           max_seller_ads_180d: parseInt(maxSellerAds180d) || 3
         })
       });
@@ -457,11 +548,21 @@
     let desc = diag.message || 'Busca executada com sucesso.';
     let badgesHtml = '';
 
-    if (status === 'strict_filter_depleted') {
+    if (status === 'no_contact_info') {
+      banner.classList.add('diag-warning');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path><line x1="2" y1="2" x2="22" y2="22" stroke="#ef4444" stroke-width="2.2"></line></svg>';
+      title = 'Zero Contatos Diretos Encontrados (Filtro de Precisão Estrita)';
+      desc = diag.message || 'A OLX possui anúncios para este termo, porém nenhum vendedor disponibilizou número de WhatsApp, Telefone ou E-mail público. Para proteger seu tempo, anúncios restritos a chat anônimo não foram exibidos.';
+    } else if (status === 'contacts_verified') {
+      banner.classList.add('diag-success');
+      iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
+      title = 'Contatos 100% Verificados & Prontos para Negociação';
+      desc = diag.message || `Exibindo ${totalFound} anúncio(s) com dados de contato direto validados com o vendedor.`;
+    } else if (status === 'strict_filter_depleted') {
       banner.classList.add('diag-warning');
       iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
       title = 'Filtros Estritos Aplicados (Nenhum Anúncio Atendeu 100% aos Critérios)';
-      desc = `A OLX retornou <strong>${diag.scanned_raw_count} anúncios</strong> na consulta, mas nenhum se enquadrou simultaneamente na sua régua de Preço, WhatsApp obrigatório ou Vendedor Novo. Dica: flexibilize a faixa de preço ou desligue temporariamente um dos filtros para ver todos os itens disponíveis.`;
+      desc = `A OLX retornou <strong>${diag.scanned_raw_count} anúncios</strong> na consulta, mas nenhum se enquadrou simultaneamente na sua régua de Preço, Contato obrigatório ou Vendedor Novo.`;
     } else if (status === 'olx_no_results') {
       banner.classList.add('diag-empty');
       iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
@@ -476,7 +577,7 @@
       banner.classList.add('diag-success');
       iconSvg = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>';
       title = 'Puxada Real Concluída com Sucesso';
-      desc = `Foram encontrados e validados <strong>${totalFound} anúncios reais</strong> na OLX de acordo com seus parâmetros.`;
+      desc = `Foram encontrados e validados <strong>${totalFound} anúncios reais</strong> na OLX com dados de contato direto.`;
     }
 
     // Badges de auditoria
@@ -678,6 +779,14 @@
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 <span class="truncate">${a.location}</span>
               </div>
+              ${(a.lead_intel && a.lead_intel.neighborhood_intel) ? `
+                <div class="ad-meta-row" title="${a.lead_intel.neighborhood_intel.perfil || 'Inteligência de Bairro'}">
+                  <span class="ad-neighborhood-badge ${a.lead_intel.neighborhood_intel.classe && a.lead_intel.neighborhood_intel.classe.includes('A') ? 'badge-high-income' : ''}">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                    <strong>${a.lead_intel.neighborhood_intel.bairro_detectado || 'Bairro'}</strong>: Renda ${a.lead_intel.neighborhood_intel.renda_media} • ${a.lead_intel.neighborhood_intel.classe}
+                  </span>
+                </div>
+              ` : ''}
               <div class="ad-meta-row" title="Data da publicação">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 <span>${a.date}</span>
@@ -725,12 +834,17 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.771-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.299.045-.677.063-1.092-.069-.252-.08-.575-.187-.988-.365-1.739-.751-2.874-2.502-2.961-2.617-.087-.116-.708-.94-.708-1.793s.448-1.273.607-1.446c.159-.173.346-.217.462-.217l.332.006c.106.005.249-.04.39.298.144.347.491 1.2.534 1.287.043.087.072.188.014.303-.058.116-.087.188-.173.289l-.26.303c-.087.087-.177.181-.076.355.101.174.449.741.964 1.201.662.591 1.221.774 1.394.86.174.086.275.072.376-.044.101-.116.433-.506.549-.68.116-.173.231-.145.39-.087s1.011.477 1.184.564.289.13.332.202c.043.073.043.419-.101.824z"/></svg>
                     <span>WhatsApp: <strong>${a.contact.phone_formatted}</strong></span>
                   </a>
+                ` : (a.contact && a.contact.has_email ? `
+                  <a href="mailto:${a.contact.email}?subject=Interesse%20no%20anuncio%20OLX" class="ad-btn-wpp" style="background:#2563eb;" title="Enviar e-mail direto ao vendedor">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <span>E-mail: <strong>${a.contact.email}</strong></span>
+                  </a>
                 ` : `
                   <a href="${a.url}" target="_blank" rel="noopener noreferrer" class="ad-btn-wpp-missing" title="Abrir chat direto na plataforma da OLX">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                     <span>Negociar no Chat da OLX</span>
                   </a>
-                `}
+                `)}
               </div>
             </div>
           </div>
@@ -2035,17 +2149,31 @@
         renderAdminSecurity(ipsData.blocked_ips || []);
       }
 
-      // 5. Pool de Tokens API (ScraperAPI)
+      // 5. Pool de Tokens API (GeckoAPI, ScraperAPI, etc.)
       const tokensRes = await fetch('/api/admin/tokens', { headers: adminHeaders });
       if (tokensRes.ok) {
         const tokensData = await tokensRes.json();
         renderAdminTokens(tokensData.tokens || []);
       }
 
+      // 6. Configurações dos Motores (Principal & Secundário)
+      const settingsRes = await fetch('/api/admin/settings', { headers: adminHeaders });
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        renderEngineSettings(settingsData.settings || {});
+      }
+
     } catch (e) {
       console.error("Falha ao carregar dados do admin:", e);
       logoutAdmin(true);
     }
+  }
+
+  function renderEngineSettings(settings) {
+    const selPrimary = document.getElementById('select-primary-engine');
+    const selSecondary = document.getElementById('select-secondary-engine');
+    if (selPrimary && settings.primary_engine) selPrimary.value = settings.primary_engine;
+    if (selSecondary && settings.secondary_engine) selSecondary.value = settings.secondary_engine;
   }
 
   function logoutAdmin(isExpired = false) {
@@ -2324,6 +2452,11 @@
         }
       }
 
+      const role = t.role || 'primary';
+      const roleBadge = role === 'primary' 
+        ? '<span class="token-role-pill role-primary">PRINCIPAL</span>' 
+        : '<span class="token-role-pill role-secondary">SECUNDÁRIA</span>';
+
       return `
         <tr>
           <td>
@@ -2331,6 +2464,14 @@
             ${t.details ? `<span class="token-details-subtext" title="${t.details}">${t.details}</span>` : ''}
           </td>
           <td><span class="ad-pill-badge">${(t.service || 'scraperapi').toUpperCase()}</span></td>
+          <td>
+            <div class="flex items-center gap-2">
+              ${roleBadge}
+              <button class="btn-toggle-role" title="Alternar entre Principal e Secundária" onclick="window.toggleApiTokenRole(${t.id}, '${role === 'primary' ? 'secondary' : 'primary'}')">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+              </button>
+            </div>
+          </td>
           <td>${statusBadge}</td>
           <td>${creditsDisplay}</td>
           <td><strong class="text-white">${t.requests_count || 0}</strong></td>
@@ -2357,6 +2498,26 @@
       `;
     }).join('');
   }
+
+  window.toggleApiTokenRole = async function(tokenId, newRole) {
+    if (!state.adminToken) return;
+    try {
+      const res = await fetch(`/api/admin/tokens/${tokenId}/set-role`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.adminToken}` 
+        },
+        body: JSON.stringify({ role: newRole, priority: newRole === 'primary' ? 1 : 2 })
+      });
+      if (res.ok) {
+        CyberShield.showToast(`Chave definida como ${newRole === 'primary' ? 'PRINCIPAL' : 'SECUNDÁRIA'}!`, "success");
+        loadAdminData();
+      }
+    } catch (e) {
+      CyberShield.showToast("Erro ao alternar papel da chave.", "error");
+    }
+  };
 
   window.checkApiTokenCredits = async function(tokenId) {
     if (!state.adminToken) return;
@@ -2439,12 +2600,16 @@
     const searchInput = document.getElementById('search-keyword');
     const minPriceInput = document.getElementById('search-min-price');
     const maxPriceInput = document.getElementById('search-max-price');
+    const neighborhoodInput = document.getElementById('search-neighborhood-input');
     const pagesInput = document.getElementById('search-pages-input');
     const descCheck = document.getElementById('check-fetch-descriptions');
     const newSellersCheck = document.getElementById('check-only-new-sellers');
     const maxAdsInput = document.getElementById('input-max-ads-180d');
 
     const triggerSearch = () => {
+      const bairroVal = neighborhoodInput ? neighborhoodInput.value.trim() : '';
+      state.selectedNeighborhood = bairroVal;
+
       runSearch(
         searchInput ? searchInput.value : '',
         state.selectedState,
@@ -2455,7 +2620,9 @@
         pagesInput ? pagesInput.value : 1,
         descCheck ? descCheck.checked : false,
         newSellersCheck ? newSellersCheck.checked : false,
-        maxAdsInput ? maxAdsInput.value : 3
+        maxAdsInput ? maxAdsInput.value : 3,
+        state.selectedCity || '',
+        bairroVal
       );
     };
 
@@ -2465,6 +2632,12 @@
 
     if (searchInput) {
       searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') triggerSearch();
+      });
+    }
+
+    if (neighborhoodInput) {
+      neighborhoodInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') triggerSearch();
       });
     }
@@ -2831,17 +3004,56 @@
       });
     }
 
-    // Adicionar chave ScraperAPI individual ao pool
+    // Salvar Ordem dos Motores de Raspagem (Primário e Secundário)
+    const saveEnginesBtn = document.getElementById('admin-save-engines-btn');
+    if (saveEnginesBtn) {
+      saveEnginesBtn.addEventListener('click', async () => {
+        if (!state.adminToken) return;
+        const selPrimary = document.getElementById('select-primary-engine');
+        const selSecondary = document.getElementById('select-secondary-engine');
+        const pVal = selPrimary ? selPrimary.value : 'cloudscraper';
+        const sVal = selSecondary ? selSecondary.value : 'scraperapi';
+
+        CyberShield.showToast("Salvando ordem de execução dos motores...", "info");
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${state.adminToken}`
+            },
+            body: JSON.stringify({ primary_engine: pVal, secondary_engine: sVal })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            CyberShield.showToast("Ordem dos Motores atualizada com sucesso!", "success");
+            loadAdminData();
+          } else {
+            CyberShield.showToast(data.detail || "Erro ao salvar motores.", "error");
+          }
+        } catch (e) {
+          CyberShield.showToast("Erro ao conectar à API.", "error");
+        }
+      });
+    }
+
+    // Adicionar chave individual ao pool (GeckoAPI, ScraperAPI, Gemini)
     const addTokenBtn = document.getElementById('admin-add-token-btn');
     const addTokenInput = document.getElementById('admin-new-token-input');
+    const tokenServiceSelect = document.getElementById('admin-new-token-service');
+    const tokenRoleSelect = document.getElementById('admin-new-token-role');
+
     if (addTokenBtn && addTokenInput) {
       addTokenBtn.addEventListener('click', async () => {
         const tokenVal = addTokenInput.value.trim();
+        const serviceVal = tokenServiceSelect ? tokenServiceSelect.value : 'scraperapi';
+        const roleVal = tokenRoleSelect ? tokenRoleSelect.value : 'primary';
+
         if (!tokenVal || !state.adminToken) {
-          CyberShield.showToast("Insira a chave da ScraperAPI.", "error");
+          CyberShield.showToast("Insira a chave da API.", "error");
           return;
         }
-        CyberShield.showToast("Adicionando chave ao pool...", "info");
+        CyberShield.showToast(`Adicionando chave ${serviceVal.toUpperCase()} (${roleVal.toUpperCase()})...`, "info");
         try {
           const res = await fetch('/api/admin/tokens', {
             method: 'POST',
@@ -2849,11 +3061,16 @@
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${state.adminToken}`
             },
-            body: JSON.stringify({ token: tokenVal, service: 'scraperapi' })
+            body: JSON.stringify({ 
+              token: tokenVal, 
+              service: serviceVal,
+              role: roleVal,
+              priority: roleVal === 'primary' ? 1 : 2
+            })
           });
           const data = await res.json();
           if (res.ok && data.success) {
-            CyberShield.showToast("Chave ScraperAPI adicionada ao pool com sucesso!", "success");
+            CyberShield.showToast(`Chave ${serviceVal.toUpperCase()} adicionada com sucesso!`, "success");
             addTokenInput.value = '';
             loadAdminData();
           } else {
@@ -2868,9 +3085,15 @@
     // Adicionar lista de tokens em massa (Bulk)
     const addBulkBtn = document.getElementById('admin-add-bulk-tokens-btn');
     const bulkInput = document.getElementById('admin-bulk-tokens-input');
+    const bulkServiceSelect = document.getElementById('admin-bulk-tokens-service');
+    const bulkRoleSelect = document.getElementById('admin-bulk-tokens-role');
+
     if (addBulkBtn && bulkInput) {
       addBulkBtn.addEventListener('click', async () => {
         const textVal = bulkInput.value.trim();
+        const serviceVal = bulkServiceSelect ? bulkServiceSelect.value : 'scraperapi';
+        const roleVal = bulkRoleSelect ? bulkRoleSelect.value : 'primary';
+
         if (!textVal || !state.adminToken) {
           CyberShield.showToast("Cole a lista de tokens antes de salvar.", "error");
           return;
@@ -2883,7 +3106,12 @@
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${state.adminToken}`
             },
-            body: JSON.stringify({ tokens_text: textVal, service: 'scraperapi' })
+            body: JSON.stringify({ 
+              tokens_text: textVal, 
+              service: serviceVal,
+              role: roleVal,
+              priority: roleVal === 'primary' ? 1 : 2
+            })
           });
           const data = await res.json();
           if (res.ok && data.success) {

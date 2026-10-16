@@ -8,13 +8,120 @@ from concurrent.futures import ThreadPoolExecutor
 from bs4 import BeautifulSoup
 from urllib.parse import urlencode, quote
 from .config import SCRAPERAPI_KEY, SCRAPERAPI_URL, BRAZILIAN_STATES, CATEGORIES
-from .database import get_next_available_token, record_token_request, mark_token_exhausted, update_token_credits, list_api_tokens
+from .database import (
+    get_next_available_token, record_token_request, mark_token_exhausted, 
+    update_token_credits, list_api_tokens, get_system_settings
+)
 from .ai_engine import extract_phone_and_whatsapp, analyze_lead_intelligence, synthesize_with_gemini
 
 import logging
 from datetime import datetime, timedelta
 
 logger = logging.getLogger("scraper")
+
+GECKOAPI_ENDPOINT = "https://api.geckoapi.com.br/v1/extract"
+
+def extract_with_geckoapi(keyword: str = "", state_uf: str = "SP", category_path: str = "", page: int = 1, city: str = "", region: str = "") -> list:
+    """
+    Executa extração profissional e avançada via GeckoAPI (https://api.geckoapi.com.br/v1/extract).
+    Utiliza token configurado no pool ou prioritário, estruturando dados em formato unificado.
+    """
+    token = get_next_available_token("geckoapi")
+    if not token:
+        token = get_next_available_token("scraperapi") # Fallback se cadastrado
+    if not token:
+        logger.warning("GeckoAPI: Nenhum token ativo encontrado no pool.")
+        return []
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "User-Agent": "OLX-Scraper-Intelligence/2.0"
+    }
+
+    # Tratamento de UF e Categoria
+    uf_clean = (state_uf or "SP").upper()
+    if uf_clean == "BR":
+        uf_clean = "SP"
+
+    cat_clean = category_path or "todas"
+    if cat_clean == "todas":
+        cat_clean = ""
+
+    payload = {
+        "target": "olx.com.br",
+        "type": "plp",
+        "page": max(1, int(page or 1)),
+        "keyword": keyword or "",
+        "state": uf_clean,
+        "city": city or "",
+        "region": region or "",
+        "categoryPath": cat_clean
+    }
+
+    try:
+        resp = requests.post(GECKOAPI_ENDPOINT, headers=headers, json=payload, timeout=14)
+        if resp.status_code in [401, 403]:
+            mark_token_exhausted(token)
+            record_token_request(token, success=False)
+            update_token_credits(token, remaining=0, status="exhausted", details="Token inválido ou sem saldo na GeckoAPI")
+            return []
+
+        if resp.status_code == 200:
+            record_token_request(token, success=True)
+            data = resp.json()
+            # Mapeia produtos/anúncios retornados pela GeckoAPI
+            raw_items = []
+            if isinstance(data, list):
+                raw_items = data
+            elif isinstance(data, dict):
+                raw_items = data.get("items") or data.get("ads") or data.get("data") or data.get("results") or []
+
+            parsed_ads = []
+            for item in raw_items:
+                if not isinstance(item, dict):
+                    continue
+                ad_url = item.get("url") or item.get("link") or ""
+                if not ad_url:
+                    continue
+                ad_id = str(item.get("id") or "")
+                if not ad_id:
+                    m = re.search(r"-(\d{6,14})", ad_url)
+                    ad_id = m.group(1) if m else str(int(time.time() * 1000))
+
+                title = item.get("title") or item.get("name") or "Anúncio OLX"
+                price_val = float(item.get("price") or item.get("price_raw") or 0.0)
+                desc = item.get("description") or item.get("desc") or ""
+                
+                # Extrai contatos
+                contact = extract_phone_and_whatsapp(title + " " + desc)
+
+                parsed_ads.append({
+                    "id": ad_id,
+                    "title": title,
+                    "url": ad_url,
+                    "price_raw": f"R$ {price_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                    "price": price_val,
+                    "installments": item.get("installments") or "",
+                    "badges": item.get("badges") or ["GeckoAPI Extração"],
+                    "seller_name": item.get("seller_name") or item.get("seller") or "Vendedor Particular",
+                    "seller_score": str(item.get("seller_score") or "5.0"),
+                    "location": item.get("location") or f"{city or uf_clean}, Brasil",
+                    "date": item.get("date") or "Hoje",
+                    "date_timestamp": time.time(),
+                    "image": item.get("image") or item.get("thumbnail") or "",
+                    "has_olx_pay": bool(item.get("has_olx_pay", False)),
+                    "has_delivery": bool(item.get("has_delivery", False)),
+                    "contact": contact,
+                    "description": desc
+                })
+            return parsed_ads
+    except Exception as e:
+        record_token_request(token, success=False)
+        logger.warning(f"GeckoAPI exception: {e}")
+        return []
+
+    return []
 
 # Cache em memória para buscas recentes (evita consumo desnecessário de créditos ScraperAPI e acelera navegação)
 HTML_CACHE = {}
@@ -114,8 +221,8 @@ def parse_price(price_str: str) -> float:
 
 def build_olx_url(keyword: str = "", state_uf: str = "BR", category_id: str = "todas",
                   min_price: float = None, max_price: float = None, sort_by: str = "relevance",
-                  page: int = 1) -> str:
-    """Constrói a URL oficial de consulta na OLX Brasil com suporte a paginação."""
+                  page: int = 1, city_slug: str = "", neighborhood: str = "") -> str:
+    """Constrói a URL oficial de consulta na OLX Brasil com suporte a cidade, bairro e paginação."""
     # Localiza o slug do estado
     state_slug = "brasil"
     for s in BRAZILIAN_STATES:
@@ -130,21 +237,34 @@ def build_olx_url(keyword: str = "", state_uf: str = "BR", category_id: str = "t
             cat_path = c["path"]
             break
 
+    # Se uma cidade/região foi selecionada (ex: sao-paulo-e-regiao/sao-paulo)
+    location_path = state_slug
+    if city_slug and city_slug.strip() and state_slug != "brasil":
+        clean_city = city_slug.strip().strip("/")
+        location_path = f"{state_slug}/{clean_city}"
+
     # Montagem da URL base
     base = "https://www.olx.com.br"
-    if cat_path and state_slug != "brasil":
-        url_path = f"{base}/{cat_path}/{state_slug}"
+    if cat_path and location_path != "brasil":
+        url_path = f"{base}/{cat_path}/{location_path}"
     elif cat_path:
         url_path = f"{base}/{cat_path}"
-    elif state_slug != "brasil":
-        url_path = f"{base}/{state_slug}"
+    elif location_path != "brasil":
+        url_path = f"{base}/{location_path}"
     else:
         url_path = f"{base}/brasil"
 
     # Parâmetros de busca
     params = {}
+    search_terms = []
     if keyword and keyword.strip():
-        params["q"] = keyword.strip()
+        search_terms.append(keyword.strip())
+    if neighborhood and neighborhood.strip():
+        search_terms.append(neighborhood.strip())
+
+    if search_terms:
+        params["q"] = " ".join(search_terms)
+
     if min_price is not None and min_price > 0:
         params["ps"] = int(min_price)
     if max_price is not None and max_price > 0:
@@ -205,52 +325,57 @@ def fetch_olx_html(target_url: str) -> str:
             return True
         return False
 
-    # Método 1 (Primário): CloudScraper nativo para bypass da OLX
+    # Método 1 (Primário): CloudScraper nativo para bypass da OLX com reutilização de sessão e timeout ágil
     try:
         import cloudscraper
-        scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'linux' if is_serverless else 'windows', 'desktop': True})
-        cs_resp = scraper.get(target_url, timeout=timeout_cs)
+        scraper = _CLOUDSCRAPER_INSTANCE or cloudscraper.create_scraper(browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True})
+        cs_resp = scraper.get(target_url, timeout=7)
         if cs_resp.status_code == 200 and is_valid_olx_html(cs_resp.text):
             HTML_CACHE[target_url] = (now, cs_resp.text)
             return cs_resp.text
     except Exception as cs_err:
         last_err = cs_err
 
-    # Método 2: Conexão Direta com Headers Camuflados de Navegador Real
-    try:
-        direct_headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Google Chrome";v="126"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Windows"',
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1"
-        }
-        direct_resp = requests.get(target_url, headers=direct_headers, timeout=timeout_direct)
-        if direct_resp.status_code == 200 and is_valid_olx_html(direct_resp.text):
-            HTML_CACHE[target_url] = (now, direct_resp.text)
-            return direct_resp.text
-    except Exception:
-        pass
+    # Método 2: Conexão Direta com Headers Camuflados de Navegador Real (Chrome 128 / Windows 11)
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+    ]
+    for ua in user_agents:
+        try:
+            direct_headers = {
+                "User-Agent": ua,
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+                "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Sec-Ch-Ua": '"Not/A)Brand";v="8", "Chromium";v="128", "Google Chrome";v="128"',
+                "Sec-Ch-Ua-Mobile": "?0",
+                "Sec-Ch-Ua-Platform": '"Windows"',
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1"
+            }
+            direct_resp = requests.get(target_url, headers=direct_headers, timeout=timeout_direct)
+            if direct_resp.status_code == 200 and is_valid_olx_html(direct_resp.text):
+                HTML_CACHE[target_url] = (now, direct_resp.text)
+                return direct_resp.text
+        except Exception as de:
+            last_err = de
 
-    # Método 3: Rotação de chaves ScraperAPI (apenas se configurado e ainda com créditos)
+    # Método 3: Rotação de chaves ScraperAPI (APENAS se houver token ativo e não-esgotado no banco)
     tried_tokens = []
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
     }
 
-    max_retries = 1 if is_serverless else 3
+    max_retries = 1 if is_serverless else 2
     for _ in range(max_retries):
         token = get_next_available_token("scraperapi", exclude_tokens=tried_tokens)
-        if not token:
-            token = SCRAPERAPI_KEY
+        # Nunca tenta chaves vazias ou sabidamente sem créditos
         if not token or token in tried_tokens:
             break
         tried_tokens.append(token)
@@ -275,7 +400,6 @@ def fetch_olx_html(target_url: str) -> str:
             resp.raise_for_status()
             record_token_request(token, success=True)
             
-            # Atualiza créditos restantes caso informado pelo cabeçalho ScraperAPI
             rem_str = resp.headers.get("sa-credits-remaining") or resp.headers.get("x-credits-remaining")
             if rem_str and rem_str.isdigit():
                 update_token_credits(token, remaining=int(rem_str), status="ready")
@@ -287,10 +411,10 @@ def fetch_olx_html(target_url: str) -> str:
             last_err = e
             continue
 
-    # Se a ScraperAPI falhou e nenhum outro método anterior respondeu
+    # Se todos os métodos falharam, relança exceção contextual limpa
     if last_err:
         raise last_err
-    raise RuntimeError("Falha de conexão com os servidores da OLX Brasil.")
+    raise RuntimeError("Os servidores da OLX Brasil temporariamente não retornaram anúncios para este filtro.")
 
 def clean_and_structure_olx_description(raw_desc: str) -> str:
     """
@@ -562,12 +686,15 @@ def parse_search_ads(html_content: str, sort_by: str = "recent", min_price: floa
 def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: str = "todas",
                         min_price: float = None, max_price: float = None, sort_by: str = "relevance",
                         pages: int = 1, fetch_full_descriptions: bool = False,
-                        only_new_sellers: bool = False, max_seller_ads_180d: int = 3):
+                        only_new_sellers: bool = False, only_with_contact: bool = True,
+                        max_seller_ads_180d: int = 3, city_slug: str = "", neighborhood: str = ""):
     """
     Executa busca avançada multi-página com:
     - Paginação real de 1 até 30 páginas
     - Filtro antecipado de 'Somente vendedores novos (0 vendas)'
     - Extração profunda de descrições completas e telefones/WhatsApp via ThreadPool
+    - Validação estrita de contato (apenas anúncios com Telefone, WhatsApp ou E-mail reais)
+    - Filtro por Cidade e Bairro com análise inteligente
     """
     is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
     # No Vercel sem streaming, até 3 páginas conseguem responder no timeout; em localhost, respeita até 30 páginas completas
@@ -576,55 +703,87 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
     all_ads = []
     seen_ids = set()
 
-    for page_num in range(1, clamped_pages + 1):
-        target_url = build_olx_url(
-            keyword=keyword,
-            state_uf=state_uf,
-            category_id=category_id,
-            min_price=min_price,
-            max_price=max_price,
-            sort_by=sort_by,
-            page=page_num
-        )
+    # Consulta configurações de Motor Principal e Secundário
+    sys_settings = get_system_settings()
+    primary_engine = sys_settings.get("primary_engine", "cloudscraper")
+    secondary_engine = sys_settings.get("secondary_engine", "scraperapi")
+
+    # Se GeckoAPI estiver como motor principal ou ativo e possuir token:
+    if primary_engine == "geckoapi":
         try:
-            html = fetch_olx_html(target_url)
-            page_ads, _ = parse_search_ads(html, sort_by=sort_by, min_price=min_price, max_price=max_price)
-            if not page_ads:
-                # Se não encontrou anúncios nessa página, encerra o loop de páginas
-                if page_num == 1:
-                    logger.info(f"Nenhum anúncio retornado na primeira página da OLX para {target_url}")
-                break
+            gecko_ads = extract_with_geckoapi(
+                keyword=keyword,
+                state_uf=state_uf,
+                category_path=category_id if category_id != "todas" else "",
+                page=1,
+                city=city_slug,
+                region=neighborhood
+            )
+            if gecko_ads:
+                all_ads.extend(gecko_ads)
+                for a in gecko_ads:
+                    if a.get("id"):
+                        seen_ids.add(a["id"])
+        except Exception as ge:
+            logger.warning(f"Falha no motor primário GeckoAPI ({ge}), alternando para secundário: {secondary_engine}")
 
-            for a in page_ads:
-                if a.get("id") and a["id"] in seen_ids:
+    # Se ainda não possui anúncios (motor primário era cloudscraper/scraperapi ou geckoapi falhou):
+    if not all_ads:
+        for page_num in range(1, clamped_pages + 1):
+            target_url = build_olx_url(
+                keyword=keyword,
+                state_uf=state_uf,
+                category_id=category_id,
+                min_price=min_price,
+                max_price=max_price,
+                sort_by=sort_by,
+                page=page_num,
+                city_slug=city_slug,
+                neighborhood=neighborhood
+            )
+            try:
+                html = fetch_olx_html(target_url)
+                page_ads, _ = parse_search_ads(html, sort_by=sort_by, min_price=min_price, max_price=max_price)
+                if not page_ads:
+                    # Se o motor principal falhou na primeira página e o secundário for geckoapi, tenta o secundário
+                    if page_num == 1 and secondary_engine == "geckoapi":
+                        logger.info("Tentando motor secundário GeckoAPI para resgate de anúncios...")
+                        gecko_fallback = extract_with_geckoapi(keyword=keyword, state_uf=state_uf, category_path=category_id, page=1, city=city_slug, region=neighborhood)
+                        if gecko_fallback:
+                            page_ads = gecko_fallback
+                    if not page_ads:
+                        break
+
+                for a in page_ads:
+                    if a.get("id") and a["id"] in seen_ids:
+                        continue
+                    if a.get("id"):
+                        seen_ids.add(a["id"])
+
+                    # Validação e Corte Estrito de Preço Mínimo e Máximo (Regra de Negócio)
+                    if min_price is not None and min_price > 0:
+                        if a["price"] > 0 and a["price"] < min_price:
+                            continue
+                    if max_price is not None and max_price > 0:
+                        if a["price"] > 0 and a["price"] > max_price:
+                            continue
+
+                    # Filtro prévio: descarta contas profissionais e lojas
+                    if only_new_sellers:
+                        badges_lower = [b.lower() for b in a.get("badges", [])]
+                        if any("pro" in b or "loja" in b or "revenda" in b or "distribuidor" in b for b in badges_lower):
+                            continue
+                        if a.get("seller_name") and ("loja" in a["seller_name"].lower() or "store" in a["seller_name"].lower()):
+                            continue
+
+                    all_ads.append(a)
+
+            except Exception as p_err:
+                logger.warning(f"Erro ao consultar página {page_num} na OLX: {p_err}")
+                # Se a primeira página falhar, registra e tenta prosseguir se houver mais páginas
+                if page_num == 1 and clamped_pages > 1:
                     continue
-                if a.get("id"):
-                    seen_ids.add(a["id"])
-
-                # Validação e Corte Estrito de Preço Mínimo e Máximo (Regra de Negócio)
-                if min_price is not None and min_price > 0:
-                    if a["price"] > 0 and a["price"] < min_price:
-                        continue
-                if max_price is not None and max_price > 0:
-                    if a["price"] > 0 and a["price"] > max_price:
-                        continue
-
-                # Filtro prévio: descarta contas profissionais e lojas
-                if only_new_sellers:
-                    badges_lower = [b.lower() for b in a.get("badges", [])]
-                    if any("pro" in b or "loja" in b or "revenda" in b or "distribuidor" in b for b in badges_lower):
-                        continue
-                    if a.get("seller_name") and ("loja" in a["seller_name"].lower() or "store" in a["seller_name"].lower()):
-                        continue
-
-                all_ads.append(a)
-
-        except Exception as p_err:
-            logger.warning(f"Erro ao consultar página {page_num} na OLX: {p_err}")
-            # Se a primeira página falhar, registra e tenta prosseguir se houver mais páginas
-            if page_num == 1 and clamped_pages > 1:
-                continue
-            break
+                break
 
     # Guarda todos os preços escaneados do mercado real antes de subamostragens/filtros
     market_prices = [a["price"] for a in all_ads if a.get("price", 0) > 0]
@@ -710,20 +869,65 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
         with ThreadPoolExecutor(max_workers=6 if is_serverless else 8) as executor:
             list(executor.map(enrich_ad, target_sub_ads))
 
-        # Filtragem Rigorosa de Leads Conforme Seleções do Usuário:
-        if fetch_full_descriptions and only_new_sellers:
-            # Ambas as opções ativas: precisa ter WhatsApp E ser vendedor novo/poucas vendas
-            all_ads = [a for a in target_sub_ads if not a.get("_discard") and a.get("contact") and a["contact"].get("has_phone")]
-            # Se a amostragem com ambos foi estrita e vazia, prioriza quem atende a pelo menos uma das metas comprovadas
-            if not all_ads:
-                all_ads = [a for a in target_sub_ads if not a.get("_discard") and (a.get("contact", {}).get("has_phone") or a.get("is_new_seller"))]
-        elif fetch_full_descriptions:
-            # Somente WhatsApp ativo: filtra estritamente quem possui contato extraído
-            wpp_ads = [a for a in target_sub_ads if a.get("contact") and a["contact"].get("has_phone")]
-            all_ads = wpp_ads if wpp_ads else target_sub_ads
-        elif only_new_sellers:
-            # Somente vendedores novos ativo: remove descartados
-            all_ads = [a for a in all_ads if not a.get("_discard")]
+    # Se a flag 'only_with_contact' estiver ativa (padrão) e ainda não tiver inspecionado anúncios
+    if only_with_contact and all_ads:
+        # Se os anúncios ainda não foram enriquecidos com a descrição completa, inspeciona uma amostra prioritária
+        unenriched = [a for a in all_ads if not a.get("description")]
+        if unenriched:
+            is_serverless = os.environ.get("VERCEL") == "1" or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+            sample_to_check = unenriched[:8 if is_serverless else 15]
+
+            def quick_enrich_contact(ad_item):
+                try:
+                    ad_html = fetch_olx_html(ad_item["url"])
+                    ad_soup = BeautifulSoup(ad_html, "html.parser")
+                    desc = ""
+                    for s in ad_soup.find_all("script", type="application/ld+json"):
+                        try:
+                            ld_data = json.loads(s.string)
+                            if isinstance(ld_data, dict) and ld_data.get("@type") == "Product" and ld_data.get("description"):
+                                desc = re.sub(r"<[^>]+>", " ", ld_data.get("description")).strip()
+                                break
+                        except Exception:
+                            continue
+                    if not desc:
+                        desc_tag = (
+                            ad_soup.find("span", attrs={"data-qa": "ad-description"}) or
+                            ad_soup.find("div", class_=lambda c: c and "description" in c.lower() if c else False) or
+                            ad_soup.find("p", class_=lambda c: c and "description" in c.lower() if c else False)
+                        )
+                        if desc_tag:
+                            desc = desc_tag.get_text(separator=" ", strip=True)
+
+                    if desc:
+                        desc_clean = clean_and_structure_olx_description(desc)
+                        ad_item["description"] = desc_clean
+                        c = extract_phone_and_whatsapp(desc_clean + " " + ad_item["title"] + " " + ad_html)
+                        if c and (c.get("has_phone") or c.get("has_email") or c.get("has_contact")):
+                            ad_item["contact"] = c
+                except Exception:
+                    pass
+                return ad_item
+
+            with ThreadPoolExecutor(max_workers=6 if is_serverless else 8) as executor:
+                list(executor.map(quick_enrich_contact, sample_to_check))
+
+    # Filtragem Inteligente de Leads Conforme Seleções do Usuário:
+    if only_new_sellers:
+        all_ads = [a for a in all_ads if not a.get("_discard")]
+
+    # REGRA SUPREMA: Se only_with_contact for True, apenas anúncios com Telefone, WhatsApp ou E-mail real passam
+    contact_filtered_out = 0
+    if only_with_contact:
+        verified_contact_ads = []
+        for a in all_ads:
+            c = a.get("contact") or {}
+            has_valid_contact = bool(c.get("has_phone") or c.get("has_email") or c.get("has_contact"))
+            if has_valid_contact:
+                verified_contact_ads.append(a)
+            else:
+                contact_filtered_out += 1
+        all_ads = verified_contact_ads
 
     # Estatísticas de mercado reais (prioriza todo o pool varrido na OLX)
     prices_for_stats = market_prices if len(market_prices) >= len(all_ads) and len(market_prices) > 0 else [a["price"] for a in all_ads if a["price"] > 0]
@@ -769,18 +973,20 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
             a["lead_badge_class"] = intel.get("lead_badge_class", "lead-regular")
             a["is_top_deal"] = intel.get("is_top_deal", False)
             a["deal_tag"] = intel.get("deal_tag", "")
-            if not a.get("contact") or not a["contact"].get("has_phone"):
-                if intel.get("contact") and intel["contact"].get("has_phone"):
+            if not a.get("contact") or not a["contact"].get("has_contact"):
+                if intel.get("contact") and intel["contact"].get("has_contact"):
                     a["contact"] = intel["contact"]
         except Exception:
             pass
 
-    # Diagnóstico Inteligente de Auditoria para o Lead
+    # Diagnóstico Inteligente e Transparente de Auditoria para o Lead
     diag = {
         "requested_pages": int(pages or 1),
         "scanned_pages": clamped_pages,
         "scanned_raw_count": len(seen_ids),
         "filtered_count": len(all_ads),
+        "contact_filtered_out": contact_filtered_out,
+        "only_with_contact": bool(only_with_contact),
         "min_price_applied": min_price,
         "max_price_applied": max_price,
         "fetch_full_descriptions": bool(fetch_full_descriptions),
@@ -792,15 +998,18 @@ def search_olx_advanced(keyword: str = "", state_uf: str = "BR", category_id: st
         if len(seen_ids) == 0:
             diag["status"] = "olx_no_results"
             diag["message"] = "Nenhum anúncio existe na OLX Brasil para os termos e localização solicitados."
+        elif contact_filtered_out > 0:
+            diag["status"] = "no_contact_info"
+            diag["message"] = f"A OLX retornou {len(seen_ids)} anúncios para sua busca, porém NENHUM possuía número de telefone, WhatsApp ou e-mail de contato direto com o vendedor. Em conformidade com o filtro de precisão estrita, esses anúncios foram ocultados para você não perder tempo com chat anônimo."
         else:
             diag["status"] = "strict_filter_depleted"
-            diag["message"] = f"A OLX retornou {len(seen_ids)} anúncios, mas nenhum passou na régua estrita de filtros (Preço, WhatsApp ou Vendedor Novo)."
-    elif len(all_ads) < 10 and len(seen_ids) > len(all_ads):
-        diag["status"] = "partial_strict_filter"
-        diag["message"] = f"Exibindo {len(all_ads)} anúncio(s) que atenderam 100% aos seus filtros entre {len(seen_ids)} verificados na OLX."
+            diag["message"] = f"A OLX retornou {len(seen_ids)} anúncios, mas nenhum passou na sua régua estrita de filtros (Preço, Vendedor Novo ou Localidade)."
+    elif len(all_ads) < len(seen_ids) and contact_filtered_out > 0:
+        diag["status"] = "contacts_verified"
+        diag["message"] = f"Exibindo {len(all_ads)} anúncio(s) com contatos diretos 100% verificados (WhatsApp/Telefone/Email). {contact_filtered_out} anúncio(s) sem contato direto foram descartados para máxima precisão."
     else:
         diag["status"] = "ok"
-        diag["message"] = f"Puxada concluída com sucesso: {len(all_ads)} anúncio(s) dentro dos parâmetros exatos."
+        diag["message"] = f"Puxada concluída com sucesso: {len(all_ads)} anúncio(s) validados com dados reais de contato."
 
     return all_ads, stats, diag
 

@@ -4833,4 +4833,359 @@ body {
   color: #ffffff !important;
 }
 
+/* ==========================================================
+   ESTRUTURA ALINHADA DA CENTRAL DE RESTAURAÇÃO SUPREMA
+   ========================================================== */
+.reset-action-card {
+  background: rgba(10, 14, 22, 0.75);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-lg);
+  padding: 1.75rem;
+  max-width: 640px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.08);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.reset-card-header {
+  margin-bottom: 1.25rem;
+}
+
+.reset-card-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 4px;
+  padding: 0.2rem 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.reset-card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.35rem;
+}
+
+.reset-card-desc {
+  font-size: 0.84rem;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+.reset-form-grid {
+  display: flex;
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.reset-input-col {
+  flex: 1;
+}
+
+.reset-btn-col {
+  flex-shrink: 0;
+}
+
+.reset-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+@media (max-width: 640px) {
+  .reset-form-grid {
+    flex-direction: column;
+  }
+  .reset-btn-col {
+    width: 100%;
+  }
+}
+
+/* Badge de Inteligência Socioeconômica & Rendas de Bairro */
+.ad-neighborhood-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  margin-top: 0.35rem;
+}
+
+.ad-neighborhood-badge.badge-high-income {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+/* ==========================================================
+   TEMA DARK / WHITE AVANÇADO (PALETAS PRETO, CINZA E BRANCO)
+   ========================================================== */
+body.theme-white {
+  --bg-deep: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.94);
+  --bg-card-hover: rgba(241, 245, 249, 0.96);
+  --bg-input: #f1f5f9;
+  --border-subtle: rgba(0, 0, 0, 0.1);
+  --border-focus: rgba(0, 0, 0, 0.3);
+  --border-glow: rgba(0, 0, 0, 0.2);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+
+  --accent-white: #0f172a;
+  --accent-silver: #334155;
+  --accent-glow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+body.theme-white #three-bg-canvas {
+  filter: invert(1) brightness(0.9);
+  opacity: 0.18;
+}
+
+body.theme-white .top-header {
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+body.theme-white .cyber-card,
+body.theme-white .control-glass-card,
+body.theme-white .ad-card,
+body.theme-white .hud-card,
+body.theme-white .cyber-modal-content {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+}
+
+body.theme-white .cyber-input,
+body.theme-white select.cyber-input {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: rgba(0, 0, 0, 0.14) !important;
+}
+
+body.theme-white .cyber-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+body.theme-white .text-white,
+body.theme-white .hero-title,
+body.theme-white .modal-title,
+body.theme-white .ad-card-title,
+body.theme-white .engine-card-title {
+  color: #0f172a !important;
+}
+
+body.theme-white .cyber-table th {
+  background: #f1f5f9;
+  color: #475569;
+  border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+
+body.theme-white .cyber-table td {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+  color: #1e293b;
+}
+
+body.theme-white .nav-tab-btn {
+  color: #475569;
+  background: transparent;
+}
+
+body.theme-white .nav-tab-btn.active {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+body.theme-white .bg-black-20 {
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Botão de Alternância de Tema */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--border-focus);
+  transform: translateY(-1px);
+}
+
+body.theme-white .theme-toggle-btn {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #0f172a;
+}
+
+body.theme-white .theme-toggle-btn:hover {
+  background: #e2e8f0;
+}
+
+/* ==========================================================
+   CARDS DE SELEÇÃO DE MOTORES PRINCIPAL & SECUNDÁRIO
+   ========================================================== */
+.engine-selection-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 1.25rem;
+}
+
+.api-engine-card {
+  position: relative;
+  background: rgba(14, 18, 26, 0.75);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 1.35rem;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.api-engine-card.active-primary {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08);
+}
+
+.api-engine-card.active-secondary {
+  border-color: rgba(245, 158, 11, 0.4);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+}
+
+.engine-card-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.engine-role-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+}
+
+.engine-role-badge.primary-badge {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.engine-role-badge.secondary-badge {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.engine-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.35rem;
+}
+
+.engine-card-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* Badges de Tabela para Função Principal/Secundária */
+.token-role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+}
+
+.token-role-pill.role-primary {
+  background: rgba(16, 185, 129, 0.14);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.4);
+}
+
+.token-role-pill.role-secondary {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.btn-toggle-role {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  padding: 0.2rem 0.45rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle-role:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+}
+
+/* Helpers to eliminate inline styles */
+.badge-rec-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+.input-token-key {
+  flex: 2;
+  min-width: 220px;
+}
+
+.select-token-service,
+.select-token-role {
+  flex: 1;
+  min-width: 130px;
+}
+
+.select-bulk-service,
+.select-bulk-role {
+  padding: 0.25rem 0.6rem;
+  height: auto;
+}
+
+
+
 

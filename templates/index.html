@@ -65,8 +65,26 @@
         </button>
       </nav>
 
-      <!-- Ações do Cabeçalho: Perfil e Admin Trigger -->
+      <!-- Ações do Cabeçalho: Tema Dark/White, Perfil e Admin Trigger -->
       <div class="header-actions">
+        <!-- Botão de Alternância de Tema Dark / White -->
+        <button class="theme-toggle-btn" id="system-theme-toggle-btn" title="Alternar Modo Escuro / Modo Claro" aria-label="Alternar Tema Dark/White">
+          <svg class="theme-icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg class="theme-icon-moon hidden" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
         <div class="lead-profile-btn" id="header-profile-btn" title="Editar Perfil ou Trocar Avatar">
           <div class="avatar-frame">
             <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23111317'/><circle cx='50' cy='38' r='18' fill='%23ffffff'/><path d='M25 82 C25 62, 75 62, 75 82' fill='%23ffffff'/></svg>" id="header-lead-avatar" alt="Avatar">
@@ -127,7 +145,7 @@
             </button>
           </div>
 
-          <!-- Filtros de Estado, Categoria, Faixas de Preço e Ordenação -->
+          <!-- Filtros de Estado, Cidade/Região, Bairro, Categoria, Preços e Ordenação -->
           <div class="filters-grid">
             <div class="filter-group">
               <label class="filter-label" for="search-state-select">Estado (UF)</label>
@@ -143,8 +161,24 @@
                   <option value="BA">Bahia (BA)</option>
                   <option value="DF">Distrito Federal (DF)</option>
                   <option value="GO">Goiás (GO)</option>
+                  <option value="PE">Pernambuco (PE)</option>
+                  <option value="CE">Ceará (CE)</option>
                 </select>
               </div>
+            </div>
+
+            <div class="filter-group" id="filter-group-city">
+              <label class="filter-label" for="search-city-select">Cidade / Região</label>
+              <div id="dropdown-city-container">
+                <select id="search-city-select" class="cyber-input filter-num-input" aria-label="Selecione a Cidade ou Região">
+                  <option value="">Todas as Cidades da UF</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="filter-group" id="filter-group-neighborhood">
+              <label class="filter-label" for="search-neighborhood-input">Bairro / Região (IA Rendas)</label>
+              <input type="text" id="search-neighborhood-input" class="cyber-input filter-num-input" placeholder="Ex: Moema, Copacabana, Savassi..." aria-label="Filtrar por Bairro">
             </div>
 
             <div class="filter-group">
@@ -278,7 +312,7 @@
                       </svg>
                     </div>
                     <div class="card-badges-group">
-                      <span class="badge-cyber-recommended"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:middle;margin-right:3px;"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>RECOMENDADO</span>
+                      <span class="badge-cyber-recommended"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" class="badge-rec-icon"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>RECOMENDADO</span>
                       <span class="badge-cyber-rate" id="badge-mining-rate">+85% TAXA DE WHATSAPP</span>
                     </div>
                     <!-- Switch 3D Futurista -->
@@ -292,11 +326,11 @@
 
                   <div class="card-body-section">
                     <div class="card-title-row">
-                      <h4 class="card-3d-title">Buscar Descrições Completas</h4>
-                      <span class="card-engine-tag">MODO DEEP-MINING</span>
+                      <h4 class="card-3d-title">Varredura Estrita de Contato Direto</h4>
+                      <span class="card-engine-tag">MODO CONTATO OBRIGATÓRIO</span>
                     </div>
                     <p class="card-3d-desc">
-                      Abre e inspeciona cada anúncio individualmente no backend, aplicando Inteligência Artificial e regex para minerar números de WhatsApp, telefones comerciais e detalhes ocultos no corpo da descrição.
+                      Raspagem avançada que inspeciona a fundo os anúncios e descrições: <strong>somente exibe anúncios com WhatsApp, Telefone ou E-mail reais de contato com o vendedor</strong>. Anúncios sem contato são filtrados e o motivo real é informado no diagnóstico final.
                     </p>
 
                     <!-- Detalhes & Validação Inteligente em Tempo Real -->
@@ -887,35 +921,104 @@
           </table>
         </div>
 
-        <!-- Subtab 5: Pool de Tokens API (ScraperAPI) -->
+        <!-- Subtab 5: Pool de Tokens API & Gestão de Motores Primário / Secundário -->
         <div class="admin-subtab-pane control-glass-card" id="admin-sub-tokens">
-          <div class="section-title mb-5">
-            <span>Pool de Tokens ScraperAPI (Auto-Rotação, Validação & Saldo em Tempo Real)</span>
+          <div class="section-title mb-5 flex-between-wrap">
+            <span>Central de Motores de Raspagem & Pool de APIs (GeckoAPI, ScraperAPI, Cloudscraper)</span>
+            <span class="engine-badge bg-status-cyan text-white">REDUNDÂNCIA AUTOMÁTICA ATIVA</span>
+          </div>
+
+          <!-- CARDS INTELIGENTES DE SELEÇÃO: MOTOR PRINCIPAL E SECUNDÁRIO -->
+          <div class="engine-selection-cards-grid mb-6">
+            <!-- Card Motor Principal -->
+            <div class="api-engine-card active-primary" id="card-engine-primary">
+              <div class="engine-card-badge-row">
+                <span class="engine-role-badge primary-badge">MOTOR PRINCIPAL (1ª TENTATIVA)</span>
+                <span class="live-dot-pulse bg-status-green"></span>
+              </div>
+              <h4 class="engine-card-title">Motor Primário de Raspagem</h4>
+              <p class="engine-card-desc">Primeiro motor acionado em cada puxada do lead. Se atingir erro, timeout ou quota zerada, o sistema salta instantaneamente para o secundário.</p>
+              <div class="engine-selector-box mt-3">
+                <select id="select-primary-engine" class="cyber-input font-bold" aria-label="Motor Primário de Raspagem">
+                  <option value="cloudscraper">Cloudscraper Nativo (Sem limites de quota / Bypass Cloudflare)</option>
+                  <option value="geckoapi">GeckoAPI (https://api.geckoapi.com.br/v1/extract - Alta Fidelidade)</option>
+                  <option value="scraperapi">ScraperAPI (Rotação de Proxies Residenciais)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Card Motor Secundário / Fallback -->
+            <div class="api-engine-card active-secondary" id="card-engine-secondary">
+              <div class="engine-card-badge-row">
+                <span class="engine-role-badge secondary-badge">MOTOR SECUNDÁRIO (REDUNDÂNCIA / FALLOVER)</span>
+                <span class="live-dot-pulse bg-status-yellow"></span>
+              </div>
+              <h4 class="engine-card-title">Motor de Contingência</h4>
+              <p class="engine-card-desc">Acionado automaticamente em segundo plano quando a primeira API falhar. Garante que o lead nunca fique com 0 resultados.</p>
+              <div class="engine-selector-box mt-3">
+                <select id="select-secondary-engine" class="cyber-input font-bold" aria-label="Motor Secundário de Contingência">
+                  <option value="scraperapi">ScraperAPI (Rotação de Proxies Residenciais)</option>
+                  <option value="geckoapi">GeckoAPI (https://api.geckoapi.com.br/v1/extract - Alta Fidelidade)</option>
+                  <option value="cloudscraper">Cloudscraper Nativo (Bypass Direto)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="text-right mb-6">
+            <button id="admin-save-engines-btn" class="cyber-btn-primary">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              Salvar Ordem dos Motores de Raspagem
+            </button>
           </div>
 
           <!-- Adição Rápida Individual e Checagem Geral -->
-          <div class="firewall-action-row mb-4">
-            <input type="text" id="admin-new-token-input" class="cyber-input max-w-300 filter-num-input" placeholder="Cole uma única chave ScraperAPI..." aria-label="Nova chave ScraperAPI">
+          <div class="firewall-action-row mb-4 p-3 border border-subtle rounded-lg bg-black-20">
+            <input type="text" id="admin-new-token-input" class="cyber-input filter-num-input input-token-key" placeholder="Cole uma chave de API (GeckoAPI ou ScraperAPI)..." aria-label="Nova chave de API">
+            
+            <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
+              <option value="geckoapi">GeckoAPI</option>
+              <option value="scraperapi" selected>ScraperAPI</option>
+              <option value="gemini">Google Gemini</option>
+            </select>
+
+            <select id="admin-new-token-role" class="cyber-input select-token-role" aria-label="Função do Token">
+              <option value="primary" selected>Principal</option>
+              <option value="secondary">Secundária</option>
+            </select>
+
             <button id="admin-add-token-btn" class="cyber-btn-primary">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Adicionar Chave
+              Adicionar
             </button>
             <button id="admin-check-all-tokens-btn" class="cyber-btn-secondary" title="Consultar saldo e validar todos os tokens agora">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              Auditar Saldos de Todos
+              Auditar Todos
             </button>
           </div>
 
           <!-- Adição em Massa / Lista de Tokens -->
           <div class="bulk-tokens-card mb-6 p-4 border border-subtle rounded-lg bg-black-20">
-            <label class="filter-label mb-2 d-block">
-              <strong>ADICIONAR LISTA DE TOKENS EM MASSA (UM POR LINHA OU SEPARADOS POR VÍRGULA):</strong>
-            </label>
-            <textarea id="admin-bulk-tokens-input" class="cyber-input w-100 font-mono text-sm" rows="3" placeholder="Cole sua lista de tokens aqui... Exemplo:&#10;1aec3392b82784e4578154b96887e010&#10;2bec4493c93895f5689265c07998e121"></textarea>
+            <div class="flex-between-wrap mb-2">
+              <label class="filter-label mb-0">
+                <strong>RECARREGAR API COM LISTA DE TOKENS (EM MASSA):</strong>
+              </label>
+              <div class="flex items-center gap-2">
+                <select id="admin-bulk-tokens-service" class="cyber-input text-xs select-bulk-service" aria-label="Serviço do lote">
+                  <option value="geckoapi">GeckoAPI</option>
+                  <option value="scraperapi" selected>ScraperAPI</option>
+                </select>
+                <select id="admin-bulk-tokens-role" class="cyber-input text-xs select-bulk-role" aria-label="Função do lote">
+                  <option value="primary" selected>Lote Principal</option>
+                  <option value="secondary">Lote Secundário</option>
+                </select>
+              </div>
+            </div>
+            <textarea id="admin-bulk-tokens-input" class="cyber-input w-100 font-mono text-sm" rows="3" placeholder="Cole sua lista de tokens aqui (um por linha ou separados por vírgula)... Exemplo:&#10;gecko_live_839a2bc1d84e...&#10;1aec3392b82784e4578154b96887e010"></textarea>
             <div class="mt-3 text-right">
               <button id="admin-add-bulk-tokens-btn" class="cyber-btn-primary">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                Guardar Lista de Tokens no Pool
+                Guardar e Validar Lista de Tokens no Pool
               </button>
             </div>
           </div>
@@ -926,6 +1029,7 @@
                 <tr>
                   <th>Chave / Token API</th>
                   <th>Serviço</th>
+                  <th>Ordem / Papel</th>
                   <th>Status</th>
                   <th>Créditos Restantes</th>
                   <th>Puxadas</th>
@@ -946,7 +1050,7 @@
           
           <div class="system-reset-warning-box mb-6">
             <div class="reset-icon-wrap">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
             </div>
             <div class="reset-text-wrap">
               <h4 class="text-white font-bold mb-1">Purga Total de Dados de Teste & Restauração ao Estado Puro</h4>
@@ -956,18 +1060,27 @@
             </div>
           </div>
 
-          <div class="reset-action-card p-6 border border-subtle rounded-xl bg-black-30 max-w-600">
-            <label class="filter-label mb-2 d-block">
-              <strong>CONFIRMAR SENHA DE ACESSO DO ADMIN SUPREMO:</strong>
-            </label>
-            <div class="flex gap-3 mb-4">
-              <input type="password" id="admin-reset-passkey-input" class="cyber-input flex-1 font-mono" placeholder="Digite sua senha de acesso..." autocomplete="current-password">
-              <button id="admin-trigger-reset-btn" class="cyber-btn-primary bg-status-red px-6" onclick="window.triggerSystemResetFromInput()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
-                Restaurar e Limpar Tudo
-              </button>
+          <div class="reset-action-card">
+            <div class="reset-card-header">
+              <span class="reset-card-badge">AUTENTICAÇÃO SUPREMA OBRIGATÓRIA</span>
+              <h3 class="reset-card-title">Confirmar Senha do Admin Supremo</h3>
+              <p class="reset-card-desc">Digite a chave de segurança para validar a assinatura SHA-256 e acionar a telemetria física de limpeza.</p>
             </div>
-            <small class="text-muted d-block">A restauração é acompanhada por uma tela de telemetria em tempo real mostrando cada etapa física executada no servidor.</small>
+            <div class="reset-form-grid">
+              <div class="reset-input-col">
+                <input type="password" id="admin-reset-passkey-input" class="cyber-input font-mono" placeholder="Digite sua senha de acesso mestre..." autocomplete="current-password">
+              </div>
+              <div class="reset-btn-col">
+                <button id="admin-trigger-reset-btn" class="cyber-btn-primary bg-status-red w-full" onclick="window.triggerSystemResetFromInput()">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+                  <span>Restaurar e Limpar Tudo</span>
+                </button>
+              </div>
+            </div>
+            <div class="reset-card-footer mt-4">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+              <span>A restauração executa 6 fases em tempo real com telemetria física no servidor.</span>
+            </div>
           </div>
         </div>
         </div> <!-- Fim de admin-content-wrapper -->
@@ -1050,7 +1163,7 @@
   </div>
 
   <!-- ================= MODAL: RESTAURAÇÃO DO SISTEMA EM TEMPO REAL ================= -->
-  <div class="cyber-modal-overlay" id="system-restoration-modal" style="display:none;">
+  <div class="cyber-modal-overlay hidden" id="system-restoration-modal">
     <div class="cyber-modal-content restoration-modal-content">
       <div class="modal-header">
         <div class="flex items-center gap-2">
@@ -1147,7 +1260,7 @@
         </div>
       </div>
 
-      <div class="modal-footer text-right p-4 border-t border-subtle" id="restoration-modal-footer" style="display:none;">
+      <div class="modal-footer text-right p-4 border-t border-subtle hidden" id="restoration-modal-footer">
         <button class="cyber-btn-primary px-6" onclick="window.closeRestorationModal()">
           Concluir e Recarregar Painel
         </button>
@@ -1156,14 +1269,14 @@
   </div>
 
   <!-- Modal de Confirmação Rápida de Senha -->
-  <div class="cyber-modal-overlay" id="system-reset-prompt-modal" style="display:none;">
+  <div class="cyber-modal-overlay hidden" id="system-reset-prompt-modal">
     <div class="cyber-modal-content max-w-450">
       <div class="modal-header">
         <h3 class="modal-title text-status-red flex items-center gap-2">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
           Reiniciar & Limpar Sistema
         </h3>
-        <button class="modal-close-btn" onclick="window.closeSystemResetModal()">
+        <button class="modal-close-btn" onclick="window.closeSystemResetModal()" title="Fechar" aria-label="Fechar modal de reinicialização">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         </button>
       </div>

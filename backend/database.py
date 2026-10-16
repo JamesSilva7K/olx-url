@@ -78,12 +78,14 @@ def init_db():
     );
     """)
 
-    # Tabela de Pool de Chaves / Tokens de API (Auto-Rotação & Quota Fallover)
+    # Tabela de Pool de Chaves / Tokens de API (Auto-Rotação, Prioridade & Quota Fallover)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS api_tokens (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         token TEXT UNIQUE NOT NULL,
         service TEXT DEFAULT 'scraperapi',
+        role TEXT DEFAULT 'primary',
+        priority INTEGER DEFAULT 1,
         is_active INTEGER DEFAULT 1,
         status TEXT DEFAULT 'ready',
         requests_count INTEGER DEFAULT 0,
@@ -92,7 +94,17 @@ def init_db():
         total_credits INTEGER DEFAULT -1,
         last_checked_at TEXT,
         created_at TEXT NOT NULL,
-        last_used_at TEXT
+        last_used_at TEXT,
+        details TEXT DEFAULT ''
+    );
+    """)
+
+    # Tabela de Configurações Globais do Sistema (Motor Primário e Secundário de Raspagem)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS system_settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL
     );
     """)
 
@@ -111,8 +123,27 @@ def init_db():
             cursor.execute("ALTER TABLE api_tokens ADD COLUMN details TEXT DEFAULT ''")
         except Exception:
             pass
+    if "role" not in existing_cols:
+        try:
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN role TEXT DEFAULT 'primary'")
+        except Exception:
+            pass
+    if "priority" not in existing_cols:
+        try:
+            cursor.execute("ALTER TABLE api_tokens ADD COLUMN priority INTEGER DEFAULT 1")
+        except Exception:
+            pass
 
-    # Seed inicial com a chave padrão se a tabela estiver vazia
+    # Inicializa configurações padrão dos Motores de Busca e Raspagem
+    now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    default_settings = [
+        ("primary_engine", "cloudscraper"),     # Opções: 'cloudscraper', 'geckoapi', 'scraperapi'
+        ("secondary_engine", "scraperapi"),     # Fallover automático se a primeira falhar
+        ("geckoapi_target", "olx.com.br"),
+        ("theme_mode", "dark")                  # Suporte aos temas dark e white
+    ]
+    for k, v in default_settings:
+        cursor.execute("INSERT OR IGNORE INTO system_settings (key, value, updated_at) VALUES (?, ?, ?)", (k, v, now_str))
     cursor.execute("SELECT COUNT(*) as c FROM api_tokens")
     if cursor.fetchone()["c"] == 0:
         now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -271,6 +302,18 @@ def delete_lead(lead_id: int):
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("DELETE FROM leads WHERE id = ?", (lead_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+def promote_lead_to_supreme_admin(vulgo: str) -> bool:
+    """Consolida e define este lead como o Admin Supremo do sistema."""
+    if not vulgo:
+        return False
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE leads SET role = 'lead' WHERE role = 'admin_supremo'")
+    cursor.execute("UPDATE leads SET role = 'admin_supremo' WHERE vulgo = ? COLLATE NOCASE", (vulgo.strip(),))
     conn.commit()
     conn.close()
     return True
@@ -473,20 +516,43 @@ def get_admin_metrics():
     }
 
 # ==========================================================
+# CONFIGURAÇÕES GLOBAIS DO SISTEMA (MOTORES PRINCIPAL E SECUNDÁRIO)
+# ==========================================================
+def get_system_settings() -> dict:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM system_settings")
+    settings = {r["key"]: r["value"] for r in cursor.fetchall()}
+    conn.close()
+    return settings
+
+def update_system_setting(key: str, value: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+    now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    cursor.execute("""
+    INSERT INTO system_settings (key, value, updated_at) 
+    VALUES (?, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at
+    """, (key, value, now_str))
+    conn.commit()
+    conn.close()
+
+# ==========================================================
 # POOL DE TOKENS DE API & AUTO-ROTAÇÃO SUPREMA
 # ==========================================================
 def list_api_tokens(service: str = None):
     conn = get_connection()
     cursor = conn.cursor()
     if service:
-        cursor.execute("SELECT * FROM api_tokens WHERE service = ? ORDER BY id ASC", (service,))
+        cursor.execute("SELECT * FROM api_tokens WHERE service = ? ORDER BY priority ASC, id ASC", (service,))
     else:
-        cursor.execute("SELECT * FROM api_tokens ORDER BY id ASC")
+        cursor.execute("SELECT * FROM api_tokens ORDER BY priority ASC, id ASC")
     tokens = [dict(r) for r in cursor.fetchall()]
     conn.close()
     return tokens
 
-def add_api_token(token_str: str, service: str = "scraperapi"):
+def add_api_token(token_str: str, service: str = "scraperapi", role: str = "primary", priority: int = 1):
     token_str = token_str.strip()
     if not token_str:
         return False
@@ -495,9 +561,9 @@ def add_api_token(token_str: str, service: str = "scraperapi"):
     now_str = datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     try:
         cursor.execute("""
-        INSERT INTO api_tokens (token, service, is_active, status, requests_count, created_at)
-        VALUES (?, ?, 1, 'ready', 0, ?)
-        """, (token_str, service, now_str))
+        INSERT INTO api_tokens (token, service, role, priority, is_active, status, requests_count, created_at)
+        VALUES (?, ?, ?, ?, 1, 'ready', 0, ?)
+        """, (token_str, service, role, priority, now_str))
         conn.commit()
         success = True
     except sqlite3.IntegrityError:
@@ -506,7 +572,7 @@ def add_api_token(token_str: str, service: str = "scraperapi"):
         conn.close()
     return success
 
-def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi"):
+def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi", role: str = "primary", priority: int = 1):
     """Insere múltiplos tokens validados no pool automático, ignorando duplicados."""
     added_count = 0
     conn = get_connection()
@@ -519,9 +585,9 @@ def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi"):
             continue
         try:
             cursor.execute("""
-            INSERT INTO api_tokens (token, service, is_active, status, requests_count, created_at)
-            VALUES (?, ?, 1, 'ready', 0, ?)
-            """, (tok, service, now_str))
+            INSERT INTO api_tokens (token, service, role, priority, is_active, status, requests_count, created_at)
+            VALUES (?, ?, ?, ?, 1, 'ready', 0, ?)
+            """, (tok, service, role, priority, now_str))
             conn.commit()
             added_count += 1
         except sqlite3.IntegrityError:
@@ -530,6 +596,18 @@ def add_api_tokens_bulk(tokens_list: list, service: str = "scraperapi"):
 
     conn.close()
     return added_count
+
+def set_token_role_and_priority(token_id: int, role: str, priority: int = 1):
+    """Define se uma API/Token é Principal (role='primary') ou Secundária (role='secondary')."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    UPDATE api_tokens 
+    SET role = ?, priority = ?
+    WHERE id = ?
+    """, (role, priority, token_id))
+    conn.commit()
+    conn.close()
 
 def update_token_credits(token_str: str, remaining: int, total: int = -1, status: str = "ready", details: str = ""):
     """Atualiza saldo de créditos, status e detalhes profundos do token."""
@@ -562,25 +640,33 @@ def toggle_api_token(token_id: int):
         conn.commit()
     conn.close()
 
-def get_next_available_token(service: str = "scraperapi", exclude_tokens: list = None) -> Optional[str]:
+def get_next_available_token(service: str = "scraperapi", role: str = None, exclude_tokens: list = None) -> Optional[str]:
     conn = get_connection()
     cursor = conn.cursor()
     exclude_tokens = exclude_tokens or []
     
     placeholders = ",".join("?" for _ in exclude_tokens) if exclude_tokens else "''"
+    
+    role_clause = "AND role = ?" if role else ""
     query = f"""
     SELECT token FROM api_tokens 
-    WHERE service = ? AND is_active = 1 AND status != 'exhausted' 
+    WHERE service = ? {role_clause} AND is_active = 1 AND status != 'exhausted' 
       AND (remaining_credits > 0 OR remaining_credits = -1)
       AND token NOT IN ({placeholders})
     ORDER BY 
+      priority ASC,
       CASE WHEN remaining_credits > 0 THEN 0 ELSE 1 END ASC,
       remaining_credits DESC,
       requests_count ASC, 
       id ASC
     LIMIT 1
     """
-    params = [service] + exclude_tokens if exclude_tokens else [service]
+    params = [service]
+    if role:
+        params.append(role)
+    if exclude_tokens:
+        params.extend(exclude_tokens)
+
     cursor.execute(query, params)
     row = cursor.fetchone()
     conn.close()

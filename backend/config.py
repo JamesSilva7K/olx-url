@@ -72,3 +72,118 @@ CATEGORIES = [
     {"id": "agro", "name": "Agro e Indústria", "path": "agro-e-industria"},
     {"id": "servicos", "name": "Serviços", "path": "servicos"}
 ]
+
+# Cidades e Regiões Principais por UF
+BRAZILIAN_CITIES = {
+    "SP": [
+        {"name": "Todas as Cidades de SP", "slug": ""},
+        {"name": "São Paulo (Capital)", "slug": "sao-paulo-e-regiao/sao-paulo"},
+        {"name": "Campinas e Região", "slug": "grande-campinas"},
+        {"name": "Santos e Baixada Santista", "slug": "baixada-santista-e-litoral-sul"},
+        {"name": "São José dos Campos e Vale", "slug": "vale-do-paraiba-e-litoral-norte"},
+        {"name": "Ribeirão Preto e Região", "slug": "regiao-de-ribeirao-preto"},
+        {"name": "Sorocaba e Região", "slug": "regiao-de-sorocaba"},
+        {"name": "São José do Rio Preto", "slug": "regiao-de-sao-jose-do-rio-preto"},
+        {"name": "Bauru e Região", "slug": "regiao-de-bauru-e-marilia"},
+        {"name": "Presidente Prudente", "slug": "regiao-de-presidente-prudente"}
+    ],
+    "RJ": [
+        {"name": "Todas as Cidades do RJ", "slug": ""},
+        {"name": "Rio de Janeiro (Capital)", "slug": "rio-de-janeiro-e-regiao/rio-de-janeiro"},
+        {"name": "Niterói e Região", "slug": "rio-de-janeiro-e-regiao/niteroi"},
+        {"name": "Baixada Fluminense", "slug": "rio-de-janeiro-e-regiao/baixada-fluminense"},
+        {"name": "Região dos Lagos (Cabo Frio/Búzios)", "slug": "norte-do-estado-do-rio/regiao-dos-lagos"},
+        {"name": "Petrópolis e Região Serrana", "slug": "serra-angra-dos-reis-e-regiao"}
+    ],
+    "MG": [
+        {"name": "Todas as Cidades de MG", "slug": ""},
+        {"name": "Belo Horizonte (Capital)", "slug": "belo-horizonte-e-regiao/belo-horizonte"},
+        {"name": "Uberlândia e Triângulo Mineiro", "slug": "triangulo-mineiro-e-alto-paranaiba"},
+        {"name": "Juiz de Fora e Zona da Mata", "slug": "zona-da-mata"},
+        {"name": "Montes Claros e Norte", "slug": "regiao-de-montes-claros-e-diamantina"}
+    ],
+    "PR": [
+        {"name": "Todas as Cidades do PR", "slug": ""},
+        {"name": "Curitiba e Região Metropolitana", "slug": "curitiba-e-regiao"},
+        {"name": "Londrina e Região", "slug": "regiao-de-londrina"},
+        {"name": "Maringá e Região", "slug": "regiao-de-maringa"},
+        {"name": "Foz do Iguaçu e Oeste", "slug": "regiao-de-foz-do-iguacu-e-cascavel"}
+    ],
+    "RS": [
+        {"name": "Todas as Cidades do RS", "slug": ""},
+        {"name": "Porto Alegre e Região", "slug": "regioes-de-porto-alegre-torres-e-santa-cruz-do-sul"},
+        {"name": "Caxias do Sul e Serra Gaúcha", "slug": "regioes-de-caxias-do-sul-e-passo-fundo"},
+        {"name": "Pelotas e Litoral Sul", "slug": "regioes-de-pelotas-rio-grande-e-bage"}
+    ],
+    "SC": [
+        {"name": "Todas as Cidades de SC", "slug": ""},
+        {"name": "Florianópolis e Região", "slug": "florianopolis-e-regiao"},
+        {"name": "Joinville e Norte", "slug": "norte-de-santa-catarina"},
+        {"name": "Blumenau e Vale do Itajaí", "slug": "vale-do-itajai"},
+        {"name": "Balneário Camboriú e Litoral", "slug": "florianopolis-e-regiao/balneario-camboriu"}
+    ],
+    "BA": [
+        {"name": "Todas as Cidades da BA", "slug": ""},
+        {"name": "Salvador e Região", "slug": "salvador"},
+        {"name": "Feira de Santana", "slug": "regiao-de-feira-de-santana"},
+        {"name": "Vitória da Conquista", "slug": "regiao-de-vitoria-da-conquista"}
+    ],
+    "DF": [
+        {"name": "Distrito Federal (Brasília)", "slug": "distrito-federal-e-regiao"}
+    ],
+    "GO": [
+        {"name": "Todas as Cidades de GO", "slug": ""},
+        {"name": "Goiânia e Região", "slug": "grande-goiania-e-anapolis"},
+        {"name": "Rio Verde e Sudoeste", "slug": "sul-de-goias"}
+    ],
+    "PE": [
+        {"name": "Todas as Cidades de PE", "slug": ""},
+        {"name": "Recife e Região Metropolitana", "slug": "grande-recife"},
+        {"name": "Caruaru e Agreste", "slug": "regiao-de-petrolina-e-garanhuns"}
+    ],
+    "CE": [
+        {"name": "Todas as Cidades do CE", "slug": ""},
+        {"name": "Fortaleza e Região Metropolitana", "slug": "fortaleza-e-regiao"},
+        {"name": "Juazeiro do Norte e Cariri", "slug": "regiao-de-juazeiro-do-norte-e-sobral"}
+    ]
+}
+
+# Base de Inteligência Socioeconômica & Rendas de Bairros (Brasil)
+NEIGHBORHOOD_SOCIO_DATA = {
+    # São Paulo / Capital
+    "moema": {"renda_media": "R$ 14.500 - R$ 26.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Região Nobre • Excelente para negociações presenciais e produtos premium"},
+    "vila mariana": {"renda_media": "R$ 9.800 - R$ 18.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Bairro tradicional de classe média-alta • Ótima liquidez"},
+    "pinheiros": {"renda_media": "R$ 12.000 - R$ 22.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Polo comercial e corporativo • Alto poder aquisitivo"},
+    "perdizes": {"renda_media": "R$ 11.500 - R$ 20.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Zona Oeste nobre • Vendedores particulares qualificados"},
+    "jardins": {"renda_media": "R$ 22.000 - R$ 45.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Área de altíssima renda • Vendas rápidas sem barganha extrema"},
+    "morumbi": {"renda_media": "R$ 13.000 - R$ 28.000", "classe": "Classe A", "seguranca": "Média/Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios fechados • Itens de alto valor agregado"},
+    "itaim bibi": {"renda_media": "R$ 18.000 - R$ 35.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Centro financeiro e tecnológico • Negociações ágeis"},
+    "tatuapé": {"renda_media": "R$ 7.500 - R$ 14.000", "classe": "Classe B+/A", "seguranca": "Média/Alta", "poder_compra": "Alto", "perfil": "Polo forte da Zona Leste • Excelente fluxo de compradores"},
+    "santana": {"renda_media": "R$ 6.200 - R$ 12.000", "classe": "Classe B+", "seguranca": "Média", "poder_compra": "Médio/Alto", "perfil": "Centro comercial da Zona Norte • Boa rotatividade"},
+    "bela vista": {"renda_media": "R$ 5.500 - R$ 10.500", "classe": "Classe B", "seguranca": "Média", "poder_compra": "Médio", "perfil": "Região central universitária e hospitalar • Fácil acesso"},
+
+    # Rio de Janeiro
+    "copacabana": {"renda_media": "R$ 8.500 - R$ 16.000", "classe": "Classe A/B+", "seguranca": "Média", "poder_compra": "Alto", "perfil": "Zona Sul densa • Negociação fácil em locais públicos"},
+    "ipanema": {"renda_media": "R$ 18.000 - R$ 38.000", "classe": "Classe A++", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Zona Sul nobre • Vendedores exigentes e desapegos de luxo"},
+    "leblon": {"renda_media": "R$ 22.000 - R$ 48.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior m² do Brasil • Compradores de altíssima renda"},
+    "barra da tijuca": {"renda_media": "R$ 12.000 - R$ 25.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Condomínios e shoppings • Preferência por retirada em shoppings"},
+    "botafogo": {"renda_media": "R$ 9.000 - R$ 17.500", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Polo jovem e corporativo • Fácil logística e metrô"},
+    "tijuca": {"renda_media": "R$ 5.800 - R$ 11.000", "classe": "Classe B+", "seguranca": "Média", "poder_compra": "Médio/Alto", "perfil": "Tradicional Zona Norte • Mercado consumidor sólido"},
+
+    # Belo Horizonte
+    "savassi": {"renda_media": "R$ 11.000 - R$ 22.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Zona Centro-Sul • Comércio e escritórios premium"},
+    "lourdes": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Bairro nobre de BH • Produtos de alta gama"},
+    "buritis": {"renda_media": "R$ 6.500 - R$ 13.000", "classe": "Classe B+", "seguranca": "Média/Alta", "poder_compra": "Médio/Alto", "perfil": "Bairro residencial universitário e famílias jovens"},
+
+    # Curitiba
+    "batel": {"renda_media": "R$ 14.000 - R$ 30.000", "classe": "Classe A+", "seguranca": "Muito Alta", "poder_compra": "Muito Alto", "perfil": "Bairro mais nobre de Curitiba • Negociações seguras"},
+    "ecoville": {"renda_media": "R$ 16.000 - R$ 35.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Edifícios de luxo • Desapegos de alto padrão"},
+    "água verde": {"renda_media": "R$ 7.800 - R$ 15.000", "classe": "Classe A/B+", "seguranca": "Alta", "poder_compra": "Alto", "perfil": "Classe média tradicional e bem estruturada"},
+
+    # Brasília (DF)
+    "asa sul": {"renda_media": "R$ 15.000 - R$ 32.000", "classe": "Classe A+", "seguranca": "Alta", "poder_compra": "Extremo", "perfil": "Servidores federais e executivos • Alto poder de compra"},
+    "asa norte": {"renda_media": "R$ 13.500 - R$ 28.000", "classe": "Classe A", "seguranca": "Alta", "poder_compra": "Muito Alto", "perfil": "Plano Piloto • Compradores qualificados e ágeis"},
+    "lago sul": {"renda_media": "R$ 28.000 - R$ 60.000+", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Maior renda per capita do país • Mansões e produtos de luxo"},
+    "sudoeste": {"renda_media": "R$ 16.000 - R$ 34.000", "classe": "Classe A++", "seguranca": "Muito Alta", "poder_compra": "Extremo", "perfil": "Setor nobre de alta densidade e alto padrão"}
+}
+
