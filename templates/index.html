@@ -16,8 +16,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <!-- Estilos Personalizados Monochrome -->
-  <link rel="stylesheet" href="/static/css/style.css?v=2.5">
-  <link rel="stylesheet" href="/static/css/animations.css?v=2.5">
+  <link rel="stylesheet" href="/static/css/style.css?v=2.6">
+  <link rel="stylesheet" href="/static/css/animations.css?v=2.6">
 </head>
 <body>
 
@@ -181,7 +181,9 @@
                 <label class="filter-label" for="search-neighborhood-input">Bairro / Região (IA Rendas)</label>
                 <div class="neighborhood-auto-toggle-wrap">
                   <button type="button" id="btn-neighborhood-auto" class="cyber-btn-mini active" title="Selecionar automaticamente a melhor opção de bairro da categoria">
-                    <span class="sparkle-icon">✨</span>
+                    <svg class="vector-icon vector-sparkle" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
                     <span class="btn-text">Melhor Escolha Auto</span>
                   </button>
                 </div>
@@ -189,18 +191,31 @@
 
               <div class="neighborhood-input-wrapper">
                 <input type="text" id="search-neighborhood-input" class="cyber-input filter-num-input" placeholder="Ex: Moema, Copacabana, Savassi..." aria-label="Filtrar por Bairro">
-                <button type="button" id="btn-clear-neighborhood" class="neighborhood-clear-btn" title="Limpar Bairro" style="display: none;">✕</button>
+                <button type="button" id="btn-clear-neighborhood" class="neighborhood-clear-btn" title="Limpar Bairro" style="display: none;">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                  </svg>
+                </button>
               </div>
 
-              <!-- Seletor de Perfil Socioeconômico (Nobres vs Populares) -->
+              <!-- Seletor de Perfil Socioeconômico (Nobres vs Populares) com Ícones Vetoriais SVG -->
               <div class="neighborhood-tier-selector">
                 <button type="button" class="tier-pill-btn active" data-tier="nobre">
-                  <span class="tier-icon">⭐</span>
+                  <span class="tier-icon-wrap">
+                    <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                  </span>
                   <span class="tier-name">Bairros Nobres</span>
                   <span class="tier-tag">Alta Renda (Classe A/B)</span>
                 </button>
                 <button type="button" class="tier-pill-btn" data-tier="popular">
-                  <span class="tier-icon">⚡</span>
+                  <span class="tier-icon-wrap">
+                    <svg class="vector-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                    </svg>
+                  </span>
                   <span class="tier-name">Mais Populares</span>
                   <span class="tier-tag">Giro Rápido (Classe C/D)</span>
                 </button>
@@ -210,10 +225,13 @@
               <div class="neighborhood-suggestions-container" id="neighborhood-suggestions-box">
                 <div class="suggestions-header">
                   <span class="suggestions-title">Sugestões Estratégicas para <span id="current-uf-badge">SP</span>:</span>
-                  <span class="selection-mode-indicator" id="selection-mode-label">⚡ Modo Automático Ativo</span>
+                  <span class="selection-mode-indicator" id="selection-mode-label">
+                    <svg class="vector-icon" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+                    Modo Automático Ativo
+                  </span>
                 </div>
                 <div class="neighborhood-chips-list" id="neighborhood-chips-list">
-                  <!-- Injetado dinamicamente via JS -->
+                  <!-- Injetado dinamicamente via JS com vetores SVG -->
                 </div>
               </div>
             </div>
@@ -1378,11 +1396,11 @@
   <div id="toast-container"></div>
 
   <!-- Scripts do Sistema -->
-  <script src="/static/js/avatars.js?v=2.5"></script>
-  <script src="/static/js/shield.js?v=2.5"></script>
-  <script src="/static/js/dropdown.js?v=2.5"></script>
-  <script src="/static/js/three-bg.js?v=2.5"></script>
-  <script src="/static/js/scanner3d.js?v=2.5"></script>
-  <script src="/static/js/app.js?v=2.5"></script>
+  <script src="/static/js/avatars.js?v=2.6"></script>
+  <script src="/static/js/shield.js?v=2.6"></script>
+  <script src="/static/js/dropdown.js?v=2.6"></script>
+  <script src="/static/js/three-bg.js?v=2.6"></script>
+  <script src="/static/js/scanner3d.js?v=2.6"></script>
+  <script src="/static/js/app.js?v=2.6"></script>
 </body>
 </html>

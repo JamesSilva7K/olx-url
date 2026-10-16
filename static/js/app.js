@@ -2757,14 +2757,19 @@
         return;
       }
 
-      // Ordena: os melhores da classe no topo (Classe A++ ou Classe C/D de alto giro)
+      // Ordenação Inteligente Baseada em Score Algorítmico e Auto Rank
       const sortedEntries = matchingEntries.sort((a, b) => {
-        const classeA = a[1].classe || '';
-        const classeB = b[1].classe || '';
-        return classeB.localeCompare(classeA);
+        const scoreA = (a[1].score !== undefined) ? a[1].score : 50;
+        const scoreB = b[1].score !== undefined) ? b[1].score : 50;
+        if (scoreB !== scoreA) {
+          return scoreB - scoreA;
+        }
+        const rankA = a[1].auto_rank || 99;
+        const rankB = b[1].auto_rank || 99;
+        return rankA - rankB;
       });
 
-      // Se o modo automático estiver ativo, seleciona automaticamente a 1ª opção (melhor opção)
+      // Se o modo automático estiver ativo, seleciona automaticamente a 1ª opção (melhor opção matemática)
       let bestItem = sortedEntries[0];
       if (state.neighborhoodAutoMode && bestItem) {
         const bestFormatted = bestItem[0].split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
@@ -2774,12 +2779,15 @@
         }
         if (btnClearNeighborhood) btnClearNeighborhood.style.display = 'inline-flex';
         if (selectionModeLabel) {
-          selectionModeLabel.textContent = `✨ Melhor Escolha Auto: ${bestFormatted}`;
+          selectionModeLabel.innerHTML = `
+            <svg class="vector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            <span>Melhor Escolha Auto: <strong>${bestFormatted}</strong></span>
+          `;
           selectionModeLabel.className = 'selection-mode-indicator';
         }
       }
 
-      // Renderiza as chips
+      // Renderiza as chips com ícones vetoriais SVG
       sortedEntries.forEach(([rawName, data], index) => {
         const displayName = rawName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
         const chip = document.createElement('button');
@@ -2788,18 +2796,26 @@
         const isSelected = (neighborhoodInput && neighborhoodInput.value.trim().toLowerCase() === rawName.toLowerCase());
 
         chip.className = `neighborhood-chip ${isBest ? 'best-choice' : ''} ${isSelected ? 'selected' : ''}`;
+        
+        const badgeSvg = isBest 
+          ? `<svg class="vector-icon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg> Top 1`
+          : data.classe;
+
         chip.innerHTML = `
           <span>${displayName}</span>
-          <span class="chip-badge">${isBest ? 'Top 1' : data.classe}</span>
+          <span class="chip-badge">${badgeSvg}</span>
         `;
-        chip.title = `${data.perfil || ''} • Renda: ${data.renda_media || ''} • Segurança: ${data.seguranca || ''}`;
+        chip.title = `${data.perfil || ''} • Renda: ${data.renda_media || ''} • Segurança: ${data.seguranca || ''} • Score: ${data.score || 90}/100`;
 
         chip.addEventListener('click', () => {
           // Clique manual pelo lead
           state.neighborhoodAutoMode = false;
           if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
           if (selectionModeLabel) {
-            selectionModeLabel.textContent = `🎯 Escolha Manual: ${displayName}`;
+            selectionModeLabel.innerHTML = `
+              <svg class="vector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+              <span>Escolha Manual: <strong>${displayName}</strong></span>
+            `;
             selectionModeLabel.className = 'selection-mode-indicator manual';
           }
           if (neighborhoodInput) {
@@ -2834,7 +2850,10 @@
           window.updateNeighborhoodSuggestions();
         } else {
           if (selectionModeLabel) {
-            selectionModeLabel.textContent = "🖐️ Escolha Manual do Lead";
+            selectionModeLabel.innerHTML = `
+              <svg class="vector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+              <span>Escolha Manual do Lead</span>
+            `;
             selectionModeLabel.className = 'selection-mode-indicator manual';
           }
         }
@@ -2859,7 +2878,10 @@
         state.neighborhoodAutoMode = false;
         if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
         if (selectionModeLabel) {
-          selectionModeLabel.textContent = "Filtro de bairro limpo";
+          selectionModeLabel.innerHTML = `
+            <svg class="vector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+            <span>Filtro de bairro limpo</span>
+          `;
           selectionModeLabel.className = 'selection-mode-indicator manual';
         }
         btnClearNeighborhood.style.display = 'none';
@@ -2879,7 +2901,10 @@
           state.neighborhoodAutoMode = false;
           if (btnAutoNeighborhood) btnAutoNeighborhood.classList.remove('active');
           if (selectionModeLabel) {
-            selectionModeLabel.textContent = "✍️ Digitado pelo Lead";
+            selectionModeLabel.innerHTML = `
+              <svg class="vector-icon" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              <span>Digitado pelo Lead</span>
+            `;
             selectionModeLabel.className = 'selection-mode-indicator manual';
           }
         }

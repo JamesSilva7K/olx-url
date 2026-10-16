@@ -5623,9 +5623,36 @@ body.theme-white .theme-toggle-btn:hover {
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.12);
 }
 
-.tier-pill-btn .tier-icon {
-  font-size: 0.85rem;
-  line-height: 1;
+.vector-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.vector-sparkle {
+  animation: miniPulse 2s infinite ease-in-out;
+}
+
+.tier-pill-btn .tier-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #a0aec0;
+  transition: all 0.2s ease;
+}
+
+.tier-pill-btn.active[data-tier="nobre"] .tier-icon-wrap {
+  background: rgba(234, 179, 8, 0.25);
+  color: #fbbf24;
+}
+
+.tier-pill-btn.active[data-tier="popular"] .tier-icon-wrap {
+  background: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
 }
 
 .tier-pill-btn .tier-name {
