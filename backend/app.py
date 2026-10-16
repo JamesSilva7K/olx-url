@@ -12,7 +12,7 @@ from .config import BRAZILIAN_STATES, CATEGORIES, BRAZILIAN_CITIES, ADMIN_SECRET
 from .database import (
     init_db, get_or_create_lead, update_lead_profile, get_lead_by_vulgo, list_leads,
     toggle_lead_block, delete_lead, is_lead_blocked, log_puxada,
-    list_puxadas, get_filter_stats, is_ip_blocked, block_ip, unblock_ip,
+    list_puxadas, delete_puxada, clear_all_puxadas, get_filter_stats, is_ip_blocked, block_ip, unblock_ip,
     list_blocked_ips, get_admin_metrics, log_system_event,
     list_api_tokens, add_api_token, add_api_tokens_bulk, delete_api_token, toggle_api_token, update_token_credits,
     set_token_role_and_priority, get_system_settings, update_system_setting,
@@ -620,6 +620,18 @@ async def admin_delete_lead(lead_id: int, auth: bool = Depends(verify_admin_auth
 async def admin_history(limit: int = 150, auth: bool = Depends(verify_admin_auth)):
     puxadas = list_puxadas(limit=limit)
     return {"history": puxadas}
+
+@app.delete("/api/admin/history/{puxada_id}")
+async def admin_delete_puxada(puxada_id: int, auth: bool = Depends(verify_admin_auth)):
+    delete_puxada(puxada_id)
+    log_system_event("PUXADA_DELETED", f"Registro de puxada ID {puxada_id} excluído")
+    return {"success": True}
+
+@app.delete("/api/admin/history")
+async def admin_clear_history(auth: bool = Depends(verify_admin_auth)):
+    clear_all_puxadas()
+    log_system_event("HISTORY_CLEARED", "Histórico completo de puxadas excluído pelo Admin")
+    return {"success": True}
 
 # Gestão de IPs da Blindagem
 @app.get("/api/admin/security/ips")

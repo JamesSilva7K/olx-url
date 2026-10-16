@@ -875,6 +875,7 @@
                   <th>Filtros (UF / Cat)</th>
                   <th>Preço Médio / Valor</th>
                   <th>Data & Hora</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody id="admin-history-tbody"></tbody>
@@ -929,7 +930,7 @@
           </div>
 
           <!-- CARDS INTELIGENTES DE SELEÇÃO: MOTOR PRINCIPAL E SECUNDÁRIO -->
-          <div class="engine-selection-cards-grid mb-6">
+          <div class="engine-selection-cards-grid mb-4">
             <!-- Card Motor Principal -->
             <div class="api-engine-card active-primary" id="card-engine-primary">
               <div class="engine-card-badge-row">
@@ -965,61 +966,70 @@
             </div>
           </div>
 
-          <div class="text-right mb-6">
+          <div class="flex justify-end mb-6">
             <button id="admin-save-engines-btn" class="cyber-btn-primary">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               Salvar Ordem dos Motores de Raspagem
             </button>
           </div>
 
-          <!-- Adição Rápida Individual e Checagem Geral -->
-          <div class="firewall-action-row mb-4 p-3 border border-subtle rounded-lg bg-black-20">
-            <input type="text" id="admin-new-token-input" class="cyber-input filter-num-input input-token-key" placeholder="Cole uma chave de API (GeckoAPI ou ScraperAPI)..." aria-label="Nova chave de API">
-            
-            <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
-              <option value="geckoapi">GeckoAPI</option>
-              <option value="scraperapi" selected>ScraperAPI</option>
-              <option value="gemini">Google Gemini</option>
-            </select>
+          <!-- Gerenciador de Chaves de API (Individual & Em Massa) -->
+          <div class="api-tokens-management-grid mb-6">
+            <!-- Adição Rápida Individual -->
+            <div class="token-manage-card p-4 border border-subtle rounded-lg bg-black-20">
+              <div class="flex-between-wrap mb-3">
+                <label class="filter-label mb-0"><strong>ADICIONAR CHAVE INDIVIDUAL:</strong></label>
+                <button id="admin-check-all-tokens-btn" class="cyber-btn-secondary text-xs px-3 py-1" title="Consultar saldo e validar todos os tokens agora">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                  Auditar Todos
+                </button>
+              </div>
 
-            <select id="admin-new-token-role" class="cyber-input select-token-role" aria-label="Função do Token">
-              <option value="primary" selected>Principal</option>
-              <option value="secondary">Secundária</option>
-            </select>
+              <div class="token-form-row mb-3">
+                <input type="text" id="admin-new-token-input" class="cyber-input filter-num-input" placeholder="Cole a chave de API..." aria-label="Nova chave de API">
+              </div>
 
-            <button id="admin-add-token-btn" class="cyber-btn-primary">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-              Adicionar
-            </button>
-            <button id="admin-check-all-tokens-btn" class="cyber-btn-secondary" title="Consultar saldo e validar todos os tokens agora">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-              Auditar Todos
-            </button>
-          </div>
-
-          <!-- Adição em Massa / Lista de Tokens -->
-          <div class="bulk-tokens-card mb-6 p-4 border border-subtle rounded-lg bg-black-20">
-            <div class="flex-between-wrap mb-2">
-              <label class="filter-label mb-0">
-                <strong>RECARREGAR API COM LISTA DE TOKENS (EM MASSA):</strong>
-              </label>
-              <div class="flex items-center gap-2">
-                <select id="admin-bulk-tokens-service" class="cyber-input text-xs select-bulk-service" aria-label="Serviço do lote">
+              <div class="token-form-controls-row">
+                <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
                   <option value="geckoapi">GeckoAPI</option>
                   <option value="scraperapi" selected>ScraperAPI</option>
+                  <option value="gemini">Google Gemini</option>
                 </select>
-                <select id="admin-bulk-tokens-role" class="cyber-input text-xs select-bulk-role" aria-label="Função do lote">
+
+                <select id="admin-new-token-role" class="cyber-input select-token-role" aria-label="Função do Token">
                   <option value="primary" selected>Lote Principal</option>
                   <option value="secondary">Lote Secundário</option>
                 </select>
+
+                <button id="admin-add-token-btn" class="cyber-btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  Adicionar
+                </button>
               </div>
             </div>
-            <textarea id="admin-bulk-tokens-input" class="cyber-input w-100 font-mono text-sm" rows="3" placeholder="Cole sua lista de tokens aqui (um por linha ou separados por vírgula)... Exemplo:&#10;gecko_live_839a2bc1d84e...&#10;1aec3392b82784e4578154b96887e010"></textarea>
-            <div class="mt-3 text-right">
-              <button id="admin-add-bulk-tokens-btn" class="cyber-btn-primary">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
-                Guardar e Validar Lista de Tokens no Pool
-              </button>
+
+            <!-- Adição em Massa / Lista de Tokens -->
+            <div class="token-manage-card p-4 border border-subtle rounded-lg bg-black-20">
+              <div class="flex-between-wrap mb-3">
+                <label class="filter-label mb-0"><strong>RECARREGAR EM MASSA (MÚLTIPLOS TOKENS):</strong></label>
+                <div class="flex items-center gap-2">
+                  <select id="admin-bulk-tokens-service" class="cyber-input text-xs select-bulk-service" aria-label="Serviço do lote">
+                    <option value="geckoapi">GeckoAPI</option>
+                    <option value="scraperapi" selected>ScraperAPI</option>
+                  </select>
+                  <select id="admin-bulk-tokens-role" class="cyber-input text-xs select-bulk-role" aria-label="Função do lote">
+                    <option value="primary" selected>Principal</option>
+                    <option value="secondary">Secundário</option>
+                  </select>
+                </div>
+              </div>
+              <textarea id="admin-bulk-tokens-input" class="cyber-input w-100 font-mono text-sm" rows="3" placeholder="Cole tokens aqui (um por linha ou separados por vírgula)..."></textarea>
+              <div class="mt-3 text-right">
+                <button id="admin-add-bulk-tokens-btn" class="cyber-btn-primary">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                  Salvar Lote de Tokens
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1041,6 +1051,8 @@
               <tbody id="admin-tokens-tbody"></tbody>
             </table>
           </div>
+        </div>
+
         <!-- Subtab 6: Reiniciar & Limpar Sistema -->
         <div class="admin-subtab-pane control-glass-card" id="admin-sub-reset">
           <div class="section-title mb-4 flex-between-wrap">

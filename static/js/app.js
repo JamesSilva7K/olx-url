@@ -358,15 +358,22 @@
       if (!val) return null;
       let s = String(val).trim().replace(/[^\d,\.]/g, '');
       if (!s) return null;
+
       if (s.includes('.') && s.includes(',')) {
+        // Exemplo: 1.500,50 -> 1500.50
         s = s.replace(/\./g, '').replace(',', '.');
       } else if (s.includes(',')) {
+        // Exemplo: 1500,50 -> 1500.50
         s = s.replace(',', '.');
       } else if (s.includes('.')) {
+        // Se tiver ponto sem vírgula, verifica se são centavos ou milhar
         const parts = s.split('.');
-        if (parts[parts.length - 1].length === 2) {
-          s = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
+        if (parts.length > 2) {
+          s = parts.join('');
+        } else if (parts[1] && parts[1].length === 2) {
+          s = parts[0] + '.' + parts[1];
         } else {
+          // Ponto como milhar: 1.500 -> 1500
           s = parts.join('');
         }
       }
@@ -1782,29 +1789,59 @@
       });
     }
 
+    function formatMoneyInputValue(val) {
+      if (val === null || val === undefined || val === '') return '';
+      // Remove tudo que não for dígito
+      const digits = String(val).replace(/\D/g, '');
+      if (!digits) return '';
+      const num = parseInt(digits, 10);
+      return num.toLocaleString('pt-BR');
+    }
+
+    function setupSmartPriceInput(inputEl, onNumericChange) {
+      if (!inputEl) return;
+
+      inputEl.addEventListener('input', () => {
+        const rawDigits = inputEl.value.replace(/\D/g, '');
+        if (!rawDigits) {
+          inputEl.value = '';
+          if (onNumericChange) onNumericChange(0);
+          return;
+        }
+        const numericVal = parseInt(rawDigits, 10);
+        // Formata em padrão milhar brasileiro (ex: 1.500)
+        inputEl.value = numericVal.toLocaleString('pt-BR');
+        if (onNumericChange) onNumericChange(numericVal);
+      });
+
+      inputEl.addEventListener('blur', () => {
+        const rawDigits = inputEl.value.replace(/\D/g, '');
+        if (rawDigits) {
+          const numericVal = parseInt(rawDigits, 10);
+          inputEl.value = numericVal.toLocaleString('pt-BR');
+        }
+      });
+    }
+
+    // Configura input de Preço Mínimo
+    const minInput = document.getElementById('search-min-price');
+    if (minInput) {
+      setupSmartPriceInput(minInput);
+    }
+
     // Evento de arrasto da barra
     slider.addEventListener('input', (e) => {
       const val = parseFloat(e.target.value) || 0;
       updateSliderVisuals(val);
       if (maxInput) {
-        maxInput.value = val > 0 ? val : '';
+        maxInput.value = val > 0 ? val.toLocaleString('pt-BR') : '';
       }
     });
 
-    // Sincroniza quando o usuário digita no input de preço máximo
+    // Sincroniza quando o usuário digita no input de preço máximo com a máscara inteligente
     if (maxInput) {
-      maxInput.addEventListener('input', () => {
-        let raw = maxInput.value.trim().replace(/[^\d,\.]/g, '');
-        let clean = raw;
-        if (clean.includes('.') && clean.includes(',')) clean = clean.replace(/\./g, '').replace(',', '.');
-        else if (clean.includes(',')) clean = clean.replace(',', '.');
-        else if (clean.includes('.')) {
-          const parts = clean.split('.');
-          if (parts[parts.length - 1].length === 2) clean = parts.slice(0, -1).join('') + '.' + parts[parts.length - 1];
-          else clean = parts.join('');
-        }
-        const val = parseFloat(clean) || 0;
-        const clamped = Math.min(50000, Math.max(0, val));
+      setupSmartPriceInput(maxInput, (numVal) => {
+        const clamped = Math.min(50000, Math.max(0, numVal));
         slider.value = clamped;
         updateSliderVisuals(clamped);
       });
@@ -1817,7 +1854,7 @@
         slider.value = val;
         updateSliderVisuals(val);
         if (maxInput) {
-          maxInput.value = val > 0 ? val : '';
+          maxInput.value = val > 0 ? val.toLocaleString('pt-BR') : '';
         }
         CyberShield.playSound('click');
       });
@@ -1830,14 +1867,15 @@
         slider.value = val;
         updateSliderVisuals(val);
         if (maxInput) {
-          maxInput.value = val > 0 ? val : '';
+          maxInput.value = val > 0 ? val.toLocaleString('pt-BR') : '';
         }
         CyberShield.playSound('click');
       });
     });
 
     // Inicialização da barra
-    const initialMax = maxInput ? (parseFloat(maxInput.value) || 0) : 0;
+    const initialRaw = maxInput ? maxInput.value.replace(/\D/g, '') : '';
+    const initialMax = initialRaw ? parseInt(initialRaw, 10) : 0;
     slider.value = initialMax;
     updateSliderVisuals(initialMax);
   }
@@ -2212,25 +2250,44 @@
     // Renderiza Atividades e Logs do Sistema em Tempo Real
     renderAdminActivities(m.recent_logs || []);
 
-    // Estatísticas de Filtros (Top UFs e Categorias)
+    // Estatísticas de Filtros Reais (Top UFs e Categorias)
     const ufBox = document.getElementById('admin-top-ufs');
-    if (ufBox && f.top_ufs) {
-      ufBox.innerHTML = f.top_ufs.map(u => `
-        <div class="admin-stat-row">
-          <span>${u.uf}</span>
-          <span class="fw-bold-white">${u.count} puxadas</span>
-        </div>
-      `).join('');
+    if (ufBox) {
+      const ufs = (f.top_ufs || []).filter(u => u && u.uf && u.uf.trim());
+      if (ufs.length === 0) {
+        ufBox.innerHTML = '<div class="admin-stat-row text-muted text-xs p-3">Nenhuma consulta por estado registrada ainda.</div>';
+      } else {
+        ufBox.innerHTML = ufs.map(u => {
+          const ufCode = u.uf.toUpperCase();
+          const stateObj = state.states ? state.states.find(s => s.uf === ufCode) : null;
+          const label = stateObj ? `${stateObj.name} (${ufCode})` : (ufCode === 'BR' ? 'Brasil (Geral)' : ufCode);
+          return `
+            <div class="admin-stat-row">
+              <span class="font-medium text-white">${label}</span>
+              <span class="fw-bold-white font-mono">${u.count} puxadas</span>
+            </div>
+          `;
+        }).join('');
+      }
     }
 
     const catBox = document.getElementById('admin-top-cats');
-    if (catBox && f.top_categories) {
-      catBox.innerHTML = f.top_categories.map(c => `
-        <div class="admin-stat-row">
-          <span>${c.categoria}</span>
-          <span class="fw-bold-white">${c.count} consultas</span>
-        </div>
-      `).join('');
+    if (catBox) {
+      const cats = (f.top_categories || []).filter(c => c && c.categoria && c.categoria.trim());
+      if (cats.length === 0) {
+        catBox.innerHTML = '<div class="admin-stat-row text-muted text-xs p-3">Nenhuma consulta por categoria registrada ainda.</div>';
+      } else {
+        catBox.innerHTML = cats.map(c => {
+          const catObj = state.categories ? state.categories.find(k => k.id === c.categoria) : null;
+          const label = catObj ? catObj.name : (c.categoria === 'todas' ? 'Todas as Categorias' : c.categoria);
+          return `
+            <div class="admin-stat-row">
+              <span class="font-medium text-white">${label}</span>
+              <span class="fw-bold-white font-mono">${c.count} consultas</span>
+            </div>
+          `;
+        }).join('');
+      }
     }
   }
 
@@ -2324,7 +2381,7 @@
     if (!tbody) return;
 
     if (history.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" class="empty-table-cell">Nenhuma puxada registrada.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="empty-table-cell">Nenhuma puxada registrada.</td></tr>`;
       return;
     }
 
@@ -2336,6 +2393,13 @@
         <td>${h.uf || 'BR'} • ${h.categoria || 'todas'}</td>
         <td>R$ ${(h.preco_medio || h.ad_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
         <td>${h.timestamp}</td>
+        <td>
+          <button class="btn-table-action btn-table-delete" 
+                  title="Excluir este registro"
+                  onclick="window.deleteHistoryPuxadaItem(${h.id})">
+            Excluir
+          </button>
+        </td>
       </tr>
     `).join('');
   }
@@ -2395,6 +2459,25 @@
       }
     } catch (e) {
       CyberShield.showToast("Erro ao excluir.", "error");
+    }
+  };
+
+  window.deleteHistoryPuxadaItem = async function(puxadaId) {
+    if (!state.adminToken) return;
+    if (!confirm("Deseja realmente excluir este registro de consulta do histórico?")) return;
+    try {
+      const res = await fetch(`/api/admin/history/${puxadaId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${state.adminToken}` }
+      });
+      if (res.ok) {
+        CyberShield.showToast("Registro de consulta excluído com sucesso.", "info");
+        loadAdminData();
+      } else {
+        CyberShield.showToast("Falha ao excluir registro do histórico.", "error");
+      }
+    } catch (e) {
+      CyberShield.showToast("Erro de conexão ao excluir registro.", "error");
     }
   };
 
@@ -3193,7 +3276,11 @@
   window.openSystemResetModal = function() {
     const modal = document.getElementById('system-reset-prompt-modal');
     const input = document.getElementById('modal-reset-passkey-input');
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
     if (input) {
       input.value = '';
       setTimeout(() => input.focus(), 150);
@@ -3202,7 +3289,11 @@
 
   window.closeSystemResetModal = function() {
     const modal = document.getElementById('system-reset-prompt-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
   };
 
   window.triggerSystemResetFromInput = function() {
@@ -3230,7 +3321,11 @@
 
   window.closeRestorationModal = function() {
     const modal = document.getElementById('system-restoration-modal');
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('active');
+      modal.style.display = 'none';
+    }
     loadAdminData();
     switchTab('admin');
   };
@@ -3247,7 +3342,11 @@
     const terminal = document.getElementById('restoration-terminal-log');
     const footer = document.getElementById('restoration-modal-footer');
 
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('active');
+      modal.style.display = 'flex';
+    }
     if (footer) footer.style.display = 'none';
 
     // Reseta visual dos passos

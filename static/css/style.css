@@ -429,9 +429,27 @@ body {
 
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.1rem;
   position: relative;
+}
+
+@media (max-width: 1200px) {
+  .filters-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 580px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .filter-group {
@@ -5180,12 +5198,34 @@ body.theme-white .theme-toggle-btn:hover {
   min-width: 130px;
 }
 
-.select-bulk-service,
-.select-bulk-role {
-  padding: 0.25rem 0.6rem;
-  height: auto;
+.api-tokens-management-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1.25rem;
 }
 
+.token-manage-card {
+  position: relative;
+  background: rgba(14, 18, 26, 0.7);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
 
+.token-form-row {
+  width: 100%;
+}
 
+.token-form-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
 
+.token-form-controls-row .select-token-service,
+.token-form-controls-row .select-token-role {
+  flex: 1;
+  min-width: 110px;
+}

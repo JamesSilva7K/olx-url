@@ -375,26 +375,45 @@ def list_puxadas(limit: int = 150, vulgo: str = None):
     conn.close()
     return puxadas
 
+def delete_puxada(puxada_id: int):
+    """Exclui uma consulta específica do histórico de puxadas."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM puxadas WHERE id = ?", (puxada_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+def clear_all_puxadas():
+    """Limpa todo o histórico de consultas/puxadas mantendo os cadastros de leads."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM puxadas")
+    cursor.execute("UPDATE leads SET total_queries = 0")
+    conn.commit()
+    conn.close()
+    return True
+
 def get_filter_stats():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # Top Estados
+    # Top Estados Reais
     cursor.execute("""
         SELECT uf, COUNT(*) as count 
         FROM puxadas 
-        WHERE uf IS NOT NULL AND uf != '' 
+        WHERE uf IS NOT NULL AND TRIM(uf) != ''
         GROUP BY uf 
         ORDER BY count DESC 
         LIMIT 8
     """)
     top_ufs = [dict(r) for r in cursor.fetchall()]
 
-    # Top Categorias
+    # Top Categorias Reais
     cursor.execute("""
         SELECT categoria, COUNT(*) as count 
         FROM puxadas 
-        WHERE categoria IS NOT NULL AND categoria != '' 
+        WHERE categoria IS NOT NULL AND TRIM(categoria) != ''
         GROUP BY categoria 
         ORDER BY count DESC 
         LIMIT 8
