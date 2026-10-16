@@ -3326,6 +3326,7 @@
       modal.classList.remove('active');
       modal.style.display = 'none';
     }
+    // Imediatamente limpa o histórico da tabela se estiver vazio
     loadAdminData();
     switchTab('admin');
   };
@@ -3341,13 +3342,25 @@
     const pct = document.getElementById('restoration-progress-pct');
     const terminal = document.getElementById('restoration-terminal-log');
     const footer = document.getElementById('restoration-modal-footer');
+    const termTag = document.getElementById('restoration-terminal-tag');
+    const liveDot = document.getElementById('restoration-live-dot');
 
     if (modal) {
       modal.classList.remove('hidden');
       modal.classList.add('active');
       modal.style.display = 'flex';
     }
-    if (footer) footer.style.display = 'none';
+    if (footer) {
+      footer.classList.add('hidden');
+      footer.style.display = 'none';
+    }
+    if (termTag) {
+      termTag.textContent = 'EXECUTANDO';
+      termTag.className = 'terminal-status-tag';
+    }
+    if (liveDot) {
+      liveDot.className = 'live-dot-pulse bg-status-red';
+    }
 
     // Reseta visual dos passos
     for (let i = 1; i <= 6; i++) {
@@ -3391,7 +3404,7 @@
 
       const delay = ms => new Promise(r => setTimeout(r, ms));
 
-      await delay(600);
+      await delay(500);
       setStepCompleted(1);
       setStepActive(2);
       if (bar) bar.style.width = '28%';
@@ -3399,7 +3412,7 @@
       appendLog("Fase 1/6 OK: Credenciais SHA-256 autenticadas com sucesso.");
       CyberShield.playSound('click');
 
-      await delay(700);
+      await delay(500);
       setStepCompleted(2);
       setStepActive(3);
       if (bar) bar.style.width = '48%';
@@ -3407,7 +3420,7 @@
       appendLog("Fase 2/6 OK: Purgando histórico de buscas da OLX e dados de testes...");
       CyberShield.playSound('click');
 
-      await delay(600);
+      await delay(500);
       setStepCompleted(3);
       setStepActive(4);
       if (bar) bar.style.width = '68%';
@@ -3415,7 +3428,7 @@
       appendLog("Fase 3/6 OK: Contadores de leads zerados e logs de auditoria limpos.");
       CyberShield.playSound('click');
 
-      await delay(600);
+      await delay(500);
       setStepCompleted(4);
       setStepActive(5);
       if (bar) bar.style.width = '85%';
@@ -3431,7 +3444,7 @@
         throw new Error(data.detail || data.message || "Erro durante a restauração.");
       }
 
-      await delay(500);
+      await delay(450);
       setStepCompleted(5);
       setStepActive(6);
       if (bar) bar.style.width = '96%';
@@ -3449,17 +3462,43 @@
       appendLog("SISTEMA 100% LIMPO E RESTAURADO PARA PRODUÇÃO REAL!");
       CyberShield.playSound('success');
 
-      if (footer) footer.style.display = 'block';
+      if (termTag) {
+        termTag.textContent = 'CONCLUÍDO';
+        termTag.className = 'terminal-status-tag success';
+      }
+      if (liveDot) {
+        liveDot.className = 'live-dot-pulse bg-status-green';
+      }
+
+      if (footer) {
+        footer.classList.remove('hidden');
+        footer.style.display = 'flex';
+        footer.style.justifyContent = 'flex-end';
+        footer.style.gap = '0.75rem';
+      }
 
       const passInput = document.getElementById('admin-reset-passkey-input');
       if (passInput) passInput.value = '';
+
+      // Atualiza os dados do painel em segundo plano para refletir tabelas limpas imediatamente
+      loadAdminData();
 
       CyberShield.showToast("Sistema totalmente limpo e restaurado!", "success");
     } catch (err) {
       appendLog(`[ERRO CRÍTICO] ${err.message}`);
       CyberShield.playSound('alert');
       CyberShield.showToast(err.message, "error");
-      if (footer) footer.style.display = 'block';
+      if (termTag) {
+        termTag.textContent = 'FALHA';
+        termTag.className = 'terminal-status-tag';
+        termTag.style.background = 'rgba(239, 68, 68, 0.2)';
+        termTag.style.color = '#ef4444';
+      }
+      if (footer) {
+        footer.classList.remove('hidden');
+        footer.style.display = 'flex';
+        footer.style.justifyContent = 'flex-end';
+      }
     }
   };
 

@@ -749,7 +749,7 @@ def reset_system_all_data() -> dict:
         cursor.execute("UPDATE leads SET total_queries = 0")
 
         # 4. Remove leads anônimos / temporários de teste, preservando o lead Admin
-        cursor.execute("DELETE FROM leads WHERE vulgo = 'Anônimo' OR role = 'guest'")
+        cursor.execute("DELETE FROM leads WHERE vulgo LIKE '%An%nimo%' OR vulgo = 'Anônimo' OR role = 'guest'")
 
         conn.commit()
 

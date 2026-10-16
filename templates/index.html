@@ -966,8 +966,12 @@
             </div>
           </div>
 
-          <div class="flex justify-end mb-6">
-            <button id="admin-save-engines-btn" class="cyber-btn-primary">
+          <!-- Ação de salvar motores -->
+          <div class="engine-save-bar mb-5">
+            <div class="engine-save-info">
+              <span class="text-xs text-muted">A alteração nos motores entra em vigor imediatamente para todas as novas consultas.</span>
+            </div>
+            <button id="admin-save-engines-btn" class="cyber-btn-primary btn-save-engines">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               Salvar Ordem dos Motores de Raspagem
             </button>
@@ -976,23 +980,23 @@
           <!-- Gerenciador de Chaves de API (Individual & Em Massa) -->
           <div class="api-tokens-management-grid mb-6">
             <!-- Adição Rápida Individual -->
-            <div class="token-manage-card p-4 border border-subtle rounded-lg bg-black-20">
-              <div class="flex-between-wrap mb-3">
-                <label class="filter-label mb-0"><strong>ADICIONAR CHAVE INDIVIDUAL:</strong></label>
-                <button id="admin-check-all-tokens-btn" class="cyber-btn-secondary text-xs px-3 py-1" title="Consultar saldo e validar todos os tokens agora">
+            <div class="token-manage-card">
+              <div class="token-manage-header">
+                <span class="token-card-heading">ADICIONAR CHAVE INDIVIDUAL</span>
+                <button id="admin-check-all-tokens-btn" class="cyber-btn-secondary text-xs px-3 py-1 btn-audit-all" title="Consultar saldo e validar todos os tokens agora">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
                   Auditar Todos
                 </button>
               </div>
 
               <div class="token-form-row mb-3">
-                <input type="text" id="admin-new-token-input" class="cyber-input filter-num-input" placeholder="Cole a chave de API..." aria-label="Nova chave de API">
+                <input type="text" id="admin-new-token-input" class="cyber-input font-mono" placeholder="Cole a chave de API aqui..." aria-label="Nova chave de API">
               </div>
 
               <div class="token-form-controls-row">
                 <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
-                  <option value="geckoapi">GeckoAPI</option>
                   <option value="scraperapi" selected>ScraperAPI</option>
+                  <option value="geckoapi">GeckoAPI</option>
                   <option value="gemini">Google Gemini</option>
                 </select>
 
@@ -1001,7 +1005,7 @@
                   <option value="secondary">Lote Secundário</option>
                 </select>
 
-                <button id="admin-add-token-btn" class="cyber-btn-primary">
+                <button id="admin-add-token-btn" class="cyber-btn-primary btn-add-token-submit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                   Adicionar
                 </button>
@@ -1009,13 +1013,13 @@
             </div>
 
             <!-- Adição em Massa / Lista de Tokens -->
-            <div class="token-manage-card p-4 border border-subtle rounded-lg bg-black-20">
-              <div class="flex-between-wrap mb-3">
-                <label class="filter-label mb-0"><strong>RECARREGAR EM MASSA (MÚLTIPLOS TOKENS):</strong></label>
-                <div class="flex items-center gap-2">
+            <div class="token-manage-card">
+              <div class="token-manage-header">
+                <span class="token-card-heading">RECARREGAR EM MASSA (MÚLTIPLOS TOKENS)</span>
+                <div class="bulk-selects-wrap">
                   <select id="admin-bulk-tokens-service" class="cyber-input text-xs select-bulk-service" aria-label="Serviço do lote">
-                    <option value="geckoapi">GeckoAPI</option>
                     <option value="scraperapi" selected>ScraperAPI</option>
+                    <option value="geckoapi">GeckoAPI</option>
                   </select>
                   <select id="admin-bulk-tokens-role" class="cyber-input text-xs select-bulk-role" aria-label="Função do lote">
                     <option value="primary" selected>Principal</option>
@@ -1023,9 +1027,9 @@
                   </select>
                 </div>
               </div>
-              <textarea id="admin-bulk-tokens-input" class="cyber-input w-100 font-mono text-sm" rows="3" placeholder="Cole tokens aqui (um por linha ou separados por vírgula)..."></textarea>
-              <div class="mt-3 text-right">
-                <button id="admin-add-bulk-tokens-btn" class="cyber-btn-primary">
+              <textarea id="admin-bulk-tokens-input" class="cyber-input w-full font-mono text-sm bulk-tokens-textarea" rows="3" placeholder="Cole os tokens aqui (um por linha ou separados por vírgula)..."></textarea>
+              <div class="token-manage-footer">
+                <button id="admin-add-bulk-tokens-btn" class="cyber-btn-primary btn-bulk-tokens-submit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
                   Salvar Lote de Tokens
                 </button>
@@ -1179,10 +1183,15 @@
     <div class="cyber-modal-content restoration-modal-content">
       <div class="modal-header">
         <div class="flex items-center gap-2">
-          <span class="live-dot-pulse bg-status-red"></span>
+          <span class="live-dot-pulse bg-status-red" id="restoration-live-dot"></span>
           <h3 class="modal-title text-white">RESTAURAÇÃO DO SISTEMA EM TEMPO REAL</h3>
         </div>
-        <span class="engine-badge font-mono" id="restoration-progress-pct">0%</span>
+        <div class="flex items-center gap-3">
+          <span class="engine-badge font-mono font-bold" id="restoration-progress-pct">0%</span>
+          <button class="modal-close-btn" onclick="window.closeRestorationModal()" title="Fechar Janela de Restauração" aria-label="Fechar modal de restauração">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
       </div>
 
       <div class="restoration-body p-4">
@@ -1196,7 +1205,7 @@
           <div class="restoration-step-item" id="r-step-1">
             <span class="step-num-pill">01</span>
             <div class="step-info">
-              <strong class="step-title">Autenticação Mestra & Bloqueio de Integridade</strong>
+              <strong class="step-title">Autenticação Mestra &amp; Bloqueio de Integridade</strong>
               <small class="step-desc">Validando credencial SHA-256 e isolando conexões ativas...</small>
             </div>
             <span class="step-status-icon" id="r-icon-1"><span class="cyber-spinner-sm"></span></span>
@@ -1205,7 +1214,7 @@
           <div class="restoration-step-item pending" id="r-step-2">
             <span class="step-num-pill">02</span>
             <div class="step-info">
-              <strong class="step-title">Purga de Dados de Teste & Histórico OLX</strong>
+              <strong class="step-title">Purga de Dados de Teste &amp; Histórico OLX</strong>
               <small class="step-desc">Excluindo registros de puxadas, termos e consultas de teste...</small>
             </div>
             <span class="step-status-icon" id="r-icon-2">
@@ -1238,7 +1247,7 @@
           <div class="restoration-step-item pending" id="r-step-5">
             <span class="step-num-pill">05</span>
             <div class="step-info">
-              <strong class="step-title">Esvaziamento de Memória Volátil & Firewall</strong>
+              <strong class="step-title">Esvaziamento de Memória Volátil &amp; Firewall</strong>
               <small class="step-desc">Zerando baldes de rate limit DDoS e limpando cache em RAM...</small>
             </div>
             <span class="step-status-icon" id="r-icon-5">
@@ -1261,10 +1270,13 @@
         <!-- Terminal Log Viewer -->
         <div class="restoration-terminal-box">
           <div class="terminal-header">
-            <span class="terminal-dot red"></span>
-            <span class="terminal-dot yellow"></span>
-            <span class="terminal-dot green"></span>
+            <div class="flex items-center gap-1">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
             <span class="terminal-title">TELEMETRIA DE SERVIÇO EM TEMPO REAL</span>
+            <span class="terminal-status-tag" id="restoration-terminal-tag">EXECUTANDO</span>
           </div>
           <div class="terminal-content font-mono text-xs" id="restoration-terminal-log">
             <div>[SYS] Inicializando protocolo de restauração do sistema...</div>
@@ -1273,8 +1285,12 @@
       </div>
 
       <div class="modal-footer text-right p-4 border-t border-subtle hidden" id="restoration-modal-footer">
+        <button class="cyber-btn-secondary px-5" onclick="window.closeRestorationModal()">
+          Fechar Janela
+        </button>
         <button class="cyber-btn-primary px-6" onclick="window.closeRestorationModal()">
-          Concluir e Recarregar Painel
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          Concluir e Atualizar Painel
         </button>
       </div>
     </div>
