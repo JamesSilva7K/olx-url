@@ -372,7 +372,7 @@ def fetch_olx_html(target_url: str) -> str:
         "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
     }
 
-    max_retries = 1 if is_serverless else 2
+    max_retries = 3 if is_serverless else 5
     for _ in range(max_retries):
         token = get_next_available_token("scraperapi", exclude_tokens=tried_tokens)
         # Nunca tenta chaves vazias ou sabidamente sem créditos

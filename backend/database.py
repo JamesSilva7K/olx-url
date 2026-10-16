@@ -660,34 +660,63 @@ def toggle_api_token(token_id: int):
     conn.close()
 
 def get_next_available_token(service: str = "scraperapi", role: str = None, exclude_tokens: list = None) -> Optional[str]:
+    """
+    Seleção Inteligente Multicamada de Token:
+    1. Se role for explicitamente informada ('primary' ou 'secondary'), busca respeitando a categoria.
+    2. Se role for None ou se o lote 'primary' estiver zerado/esgotado, busca automaticamente do lote 'secondary' (fallover inteligente).
+    3. Ordena por prioridade ascendente, créditos disponíveis decrescente e menor contagem de erros.
+    """
     conn = get_connection()
     cursor = conn.cursor()
     exclude_tokens = exclude_tokens or []
     
     placeholders = ",".join("?" for _ in exclude_tokens) if exclude_tokens else "''"
     
-    role_clause = "AND role = ?" if role else ""
-    query = f"""
+    # 1ª Tentativa: busca respeitando a role ou priorizando 'primary'
+    target_role = role or "primary"
+    query_primary = f"""
     SELECT token FROM api_tokens 
-    WHERE service = ? {role_clause} AND is_active = 1 AND status != 'exhausted' 
+    WHERE service = ? AND role = ? AND is_active = 1 AND status != 'exhausted' 
       AND (remaining_credits > 0 OR remaining_credits = -1)
       AND token NOT IN ({placeholders})
     ORDER BY 
       priority ASC,
       CASE WHEN remaining_credits > 0 THEN 0 ELSE 1 END ASC,
       remaining_credits DESC,
+      errors_count ASC,
       requests_count ASC, 
       id ASC
     LIMIT 1
     """
-    params = [service]
-    if role:
-        params.append(role)
+    params = [service, target_role]
     if exclude_tokens:
         params.extend(exclude_tokens)
 
-    cursor.execute(query, params)
+    cursor.execute(query_primary, params)
     row = cursor.fetchone()
+    
+    # 2ª Tentativa (Fallover inteligente): Se não especificou role rígida e esgotou primary, busca no secundário
+    if not row and role is None:
+        query_fallback = f"""
+        SELECT token FROM api_tokens 
+        WHERE service = ? AND role = 'secondary' AND is_active = 1 AND status != 'exhausted' 
+          AND (remaining_credits > 0 OR remaining_credits = -1)
+          AND token NOT IN ({placeholders})
+        ORDER BY 
+          priority ASC,
+          CASE WHEN remaining_credits > 0 THEN 0 ELSE 1 END ASC,
+          remaining_credits DESC,
+          errors_count ASC,
+          requests_count ASC, 
+          id ASC
+        LIMIT 1
+        """
+        params_fb = [service]
+        if exclude_tokens:
+            params_fb.extend(exclude_tokens)
+        cursor.execute(query_fallback, params_fb)
+        row = cursor.fetchone()
+
     conn.close()
     
     if row:

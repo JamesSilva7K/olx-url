@@ -670,6 +670,20 @@ async def admin_add_token(payload: ApiTokenPayload, auth: bool = Depends(verify_
     success = add_api_token(tok, service=service, role=role, priority=priority)
     if not success:
         raise HTTPException(status_code=400, detail="Token já existente no pool.")
+
+    # Auditoria e validação imediata em segundo plano/sincrona para precisão máxima
+    try:
+        insp = deep_inspect_token(tok, service=service)
+        update_token_credits(
+            tok,
+            remaining=insp.get("remaining_credits", -1),
+            total=insp.get("total_credits", -1),
+            status=insp.get("status", "ready"),
+            details=insp.get("details", "")
+        )
+    except Exception:
+        pass
+
     log_system_event("API_TOKEN_ADDED", f"Nova chave {service.upper()} ({role.upper()}) adicionada ({tok[:8]}...)")
     return {"success": True}
 
@@ -684,12 +698,27 @@ async def admin_add_tokens_bulk(payload: ApiTokenBulkPayload, auth: bool = Depen
     role = payload.role or "primary"
     priority = payload.priority or 1
     added = add_api_tokens_bulk(clean_tokens, service=service, role=role, priority=priority)
+
+    # Audita e valida cada novo token do lote para garantir quotas em tempo real
+    for tok in clean_tokens:
+        try:
+            insp = deep_inspect_token(tok, service=service)
+            update_token_credits(
+                tok,
+                remaining=insp.get("remaining_credits", -1),
+                total=insp.get("total_credits", -1),
+                status=insp.get("status", "ready"),
+                details=insp.get("details", "")
+            )
+        except Exception:
+            pass
+
     log_system_event("API_TOKENS_BULK_ADDED", f"{added} novos tokens ({service.upper()}/{role.upper()}) adicionados em lote pelo Admin Supremo")
     return {
         "success": True,
         "total_submitted": len(clean_tokens),
         "total_added": added,
-        "message": f"{added} chaves adicionadas com sucesso ao pool!"
+        "message": f"{added} chaves adicionadas e auditadas com sucesso no pool!"
     }
 
 def deep_inspect_token(tok: str, service: str = "scraperapi") -> dict:
