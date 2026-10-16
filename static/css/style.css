@@ -397,6 +397,25 @@ body {
   transition: all 0.25s ease;
 }
 
+select.cyber-input {
+  padding-left: 1rem !important;
+  padding-right: 2.25rem !important;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2216%22%20height%3D%2216%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2394a3b8%22%20stroke-width%3D%222.2%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 15px 15px;
+}
+
+select.cyber-input option {
+  background: #0b0f17;
+  color: #f1f5f9;
+  padding: 0.5rem;
+}
+
 .cyber-input:focus {
   border-color: #fff;
   box-shadow: 0 0 16px rgba(255, 255, 255, 0.16);
@@ -4916,12 +4935,24 @@ body {
 /* ==========================================================
    ESTRUTURA ALINHADA DA CENTRAL DE RESTAURAÇÃO SUPREMA
    ========================================================== */
+.system-reset-warning-box {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  padding: 1.35rem 1.5rem;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(15, 23, 42, 0.4) 100%);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  margin-bottom: 1.5rem;
+}
+
 .reset-action-card {
   background: rgba(10, 14, 22, 0.75);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: var(--radius-lg);
   padding: 1.75rem;
-  max-width: 640px;
+  max-width: 720px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.08);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
@@ -4932,7 +4963,8 @@ body {
 }
 
 .reset-card-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   font-family: var(--font-mono);
   font-size: 0.68rem;
   font-weight: 800;
@@ -4941,8 +4973,9 @@ body {
   background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 4px;
-  padding: 0.2rem 0.5rem;
-  margin-bottom: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.2;
 }
 
 .reset-card-title {
@@ -4968,16 +5001,27 @@ body {
   flex: 1;
 }
 
+.reset-input-col input {
+  padding-left: 1.15rem !important;
+  height: 46px;
+}
+
 .reset-btn-col {
   flex-shrink: 0;
+}
+
+.reset-btn-col button {
+  height: 46px;
+  padding: 0 1.5rem;
 }
 
 .reset-card-footer {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.76rem;
-  color: #64748b;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 1rem;
 }
 
 @media (max-width: 640px) {
@@ -5345,21 +5389,32 @@ body.theme-white .theme-toggle-btn:hover {
 .token-form-controls-row {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.token-select-group {
+  flex: 1;
+  min-width: 0;
 }
 
 .token-form-controls-row .select-token-service,
 .token-form-controls-row .select-token-role {
-  flex: 1;
-  min-width: 110px;
+  width: 100%;
   height: 42px;
+  font-size: 0.88rem;
 }
 
 .btn-add-token-submit {
-  padding: 0.65rem 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0 1.25rem;
   font-size: 0.85rem;
   height: 42px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  font-weight: 700;
 }
 
 .bulk-tokens-textarea {
@@ -5367,6 +5422,7 @@ body.theme-white .theme-toggle-btn:hover {
   min-height: 85px;
   max-height: 180px;
   line-height: 1.4;
+  padding-left: 1rem !important;
 }
 
 .token-manage-footer {
@@ -5376,9 +5432,15 @@ body.theme-white .theme-toggle-btn:hover {
 }
 
 .btn-bulk-tokens-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.65rem 1.35rem;
   font-size: 0.85rem;
   cursor: pointer;
+  border-radius: var(--radius-md);
+  font-weight: 700;
 }
 
 @media (max-width: 768px) {
@@ -5397,6 +5459,7 @@ body.theme-white .theme-toggle-btn:hover {
     flex-direction: column;
     align-items: stretch;
   }
+  .token-select-group,
   .token-form-controls-row .select-token-service,
   .token-form-controls-row .select-token-role,
   .btn-add-token-submit {

@@ -748,8 +748,8 @@ def reset_system_all_data() -> dict:
         # 3. Zera contadores de consultas de todos os leads mantendo apenas contas ativas
         cursor.execute("UPDATE leads SET total_queries = 0")
 
-        # 4. Remove leads anônimos / temporários de teste, preservando o lead Admin
-        cursor.execute("DELETE FROM leads WHERE vulgo LIKE '%An%nimo%' OR vulgo = 'Anônimo' OR role = 'guest'")
+        # 4. Remove leads anônimos / temporários de teste e mocks, preservando apenas admin supremo se houver
+        cursor.execute("DELETE FROM leads WHERE role != 'admin' OR vulgo LIKE '%An%nimo%' OR vulgo = 'Anônimo' OR vulgo = 'SombraCyber' OR vulgo = 'NG7k'")
 
         conn.commit()
 

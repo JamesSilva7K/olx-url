@@ -994,20 +994,24 @@
               </div>
 
               <div class="token-form-controls-row">
-                <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
-                  <option value="scraperapi" selected>ScraperAPI</option>
-                  <option value="geckoapi">GeckoAPI</option>
-                  <option value="gemini">Google Gemini</option>
-                </select>
+                <div class="token-select-group">
+                  <select id="admin-new-token-service" class="cyber-input select-token-service" aria-label="Serviço do Token">
+                    <option value="scraperapi" selected>ScraperAPI</option>
+                    <option value="geckoapi">GeckoAPI</option>
+                    <option value="gemini">Google Gemini</option>
+                  </select>
+                </div>
 
-                <select id="admin-new-token-role" class="cyber-input select-token-role" aria-label="Função do Token">
-                  <option value="primary" selected>Lote Principal</option>
-                  <option value="secondary">Lote Secundário</option>
-                </select>
+                <div class="token-select-group">
+                  <select id="admin-new-token-role" class="cyber-input select-token-role" aria-label="Função do Token">
+                    <option value="primary" selected>Lote Principal</option>
+                    <option value="secondary">Lote Secundário</option>
+                  </select>
+                </div>
 
                 <button id="admin-add-token-btn" class="cyber-btn-primary btn-add-token-submit">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                  Adicionar
+                  <span>Adicionar</span>
                 </button>
               </div>
             </div>
